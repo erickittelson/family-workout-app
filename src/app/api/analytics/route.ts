@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import {
   workoutSessions,
   workoutPlans,
-  familyMembers,
+  circleMembers,
   memberMetrics,
   personalRecords,
   goals,
@@ -27,8 +27,8 @@ export async function GET(request: Request) {
     startDate.setDate(startDate.getDate() - days);
 
     // Get family members
-    const members = await db.query.familyMembers.findMany({
-      where: eq(familyMembers.familyId, session.familyId),
+    const members = await db.query.circleMembers.findMany({
+      where: eq(circleMembers.circleId, session.circleId),
       columns: { id: true },
     });
 

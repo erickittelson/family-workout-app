@@ -1,0 +1,73 @@
+# Circle Entity
+# Group of members training together
+
+entity: circle
+version: "1.0.0"
+description: "A group of members who train together (formerly 'family')"
+table: circles
+
+# Primary identifier
+primary_key: id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier for the circle"
+
+  - name: name
+    type: string
+    description: "Display name for the circle"
+    required: true
+
+  - name: description
+    type: string
+    description: "Optional description of the circle"
+
+# Relations
+relations:
+  members:
+    table: circle_members
+    type: one_to_many
+    description: "Members belonging to this circle"
+
+  workout_plans:
+    table: workout_plans
+    type: one_to_many
+    description: "Workout templates for the circle"
+
+  equipment:
+    table: circle_equipment
+    type: one_to_many
+    description: "Available equipment for the circle"
+
+  invitations:
+    table: circle_invitations
+    type: one_to_many
+    description: "Pending invitations to join"
+
+# Query examples
+examples:
+  - question: "How many members are in the circle?"
+    sql: |
+      SELECT COUNT(*) as member_count
+      FROM circle_members
+      WHERE circle_id = $1
+
+  - question: "What equipment does the circle have?"
+    sql: |
+      SELECT name, category, quantity
+      FROM circle_equipment
+      WHERE circle_id = $1
+      ORDER BY category, name
+
+  - question: "Who are the circle admins?"
+    sql: |
+      SELECT name, role
+      FROM circle_members
+      WHERE circle_id = $1 AND role IN ('owner', 'admin')
+
+# Synonyms
+synonyms:
+  circle: [group, family, team, crew, squad]
+  member: [person, user, athlete]

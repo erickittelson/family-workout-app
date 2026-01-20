@@ -73,7 +73,7 @@ export default function LogWorkoutPage() {
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
 
   const [selectedMember, setSelectedMember] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState(planId || "");
+  const [selectedPlan, setSelectedPlan] = useState(planId || "__custom__");
   const [workoutName, setWorkoutName] = useState("");
   const [workoutDate, setWorkoutDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -87,7 +87,7 @@ export default function LogWorkoutPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedPlan && plans.length > 0) {
+    if (selectedPlan && selectedPlan !== "__custom__" && plans.length > 0) {
       loadPlanExercises(selectedPlan);
     }
   }, [selectedPlan, plans]);
@@ -191,7 +191,7 @@ export default function LogWorkoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           memberId: selectedMember,
-          planId: selectedPlan || null,
+          planId: selectedPlan && selectedPlan !== "__custom__" ? selectedPlan : null,
           name: workoutName,
           date: workoutDate,
           exercises: exerciseLogs.map((ex, index) => ({
@@ -294,7 +294,7 @@ export default function LogWorkoutPage() {
                   <SelectValue placeholder="Select a plan or log custom" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Custom Workout</SelectItem>
+                  <SelectItem value="__custom__">Custom Workout</SelectItem>
                   {plans.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
                       {plan.name}

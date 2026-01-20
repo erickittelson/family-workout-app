@@ -1,0 +1,220 @@
+# Onboarding Domain
+# User onboarding, profile setup, and initial data collection
+
+domain: onboarding
+version: "1.0.0"
+description: "Conversational onboarding for new users"
+
+# Coach persona for onboarding
+persona:
+  name: "Coach"
+  traits:
+    - "Warm and encouraging"
+    - "Knowledgeable but not preachy"
+    - "Asks follow-up questions naturally"
+    - "Celebrates user responses"
+    - "Explains the 'why' behind questions"
+  first_message: |
+    Hey! I'm your AI fitness coach. I'm here to help you train smarter,
+    track your progress, and crush your goals. Before we dive in, I'd
+    love to learn a bit about you. What should I call you?
+
+# Onboarding phases
+phases:
+  welcome:
+    goal: "Build rapport, understand motivation"
+    data_collected: [name_preference, primary_motivation]
+    feature_intro: "AI coaching capabilities"
+    questions:
+      - "What should I call you?"
+      - "What's bringing you here today?"
+    quick_replies:
+      - "Get stronger"
+      - "Lose weight"
+      - "Build muscle"
+      - "Stay consistent"
+      - "Learn new skills"
+
+  basics:
+    goal: "Collect demographic info naturally"
+    data_collected: [age, gender, height, weight]
+    feature_intro: "Progress tracking"
+    questions:
+      - "How old are you?"
+      - "What's your current height and weight?"
+    validation:
+      age: { min: 13, max: 100 }
+      height: { min: 48, max: 96, unit: "inches" }
+      weight: { min: 50, max: 500, unit: "lbs" }
+
+  fitness_background:
+    goal: "Understand current fitness level"
+    data_collected: [experience_level, current_activity, training_frequency]
+    feature_intro: "Personalized workout generation"
+    questions:
+      - "How would you describe your fitness experience?"
+      - "How often do you work out currently?"
+    quick_replies:
+      - "Complete beginner"
+      - "I've trained before"
+      - "Consistent for years"
+      - "Former athlete"
+
+  goals:
+    goal: "Define specific fitness goals"
+    data_collected: [primary_goal, secondary_goals, timeline]
+    feature_intro: "Goal tracking with milestones"
+    questions:
+      - "What's your main fitness goal right now?"
+      - "Any secondary goals?"
+      - "When would you like to achieve this?"
+
+  body_composition:
+    goal: "Get body metrics for personalization"
+    data_collected: [body_fat_estimate, target_weight, physique_goals]
+    feature_intro: "Body composition tracking"
+    questions:
+      - "Do you have a sense of your current body fat percentage?"
+      - "What's your target weight or physique?"
+    optional: true
+
+  limitations:
+    goal: "Understand physical limitations"
+    data_collected: [injuries, conditions, restrictions]
+    feature_intro: "Smart exercise filtering"
+    questions:
+      - "Any injuries or conditions I should know about?"
+      - "Anything that limits certain movements?"
+    quick_replies:
+      - "No limitations"
+      - "Bad back"
+      - "Shoulder issues"
+      - "Knee problems"
+      - "Other injury"
+
+  personal_records:
+    goal: "Baseline strength/cardio levels"
+    data_collected: [key_lifts, cardio_benchmarks, bodyweight_skills]
+    feature_intro: "PR tracking"
+    questions:
+      - "Know any of your current maxes? Bench, squat, deadlift?"
+      - "Any bodyweight skills you can do? Pull-ups, push-ups, etc."
+    optional: true
+
+  preferences:
+    goal: "Training preferences"
+    data_collected: [workout_duration, equipment_access, preferred_styles]
+    feature_intro: "Personalized programming"
+    questions:
+      - "How long do you like your workouts?"
+      - "What equipment do you have access to?"
+    quick_replies:
+      - "Full gym"
+      - "Home gym"
+      - "Bodyweight only"
+      - "Minimal equipment"
+
+  wrap_up:
+    goal: "Summarize and create profile"
+    action: "Generate member profile and metrics"
+    feature_intro: "Dashboard overview"
+    message: |
+      Awesome! I've got a great picture of where you're at and where you
+      want to go. I'm setting up your personalized dashboard now. Ready
+      to start your fitness journey?
+
+# Data extraction schema
+extraction_schema:
+  name:
+    type: string
+    extract_from: "user's preferred name/nickname"
+
+  dateOfBirth:
+    type: date
+    calculate_from: "age mentioned by user"
+
+  gender:
+    type: enum
+    values: ["male", "female", "other"]
+    extract_from: "user's stated gender"
+
+  height:
+    type: number
+    unit: inches
+    extract_from: "height in any format"
+    convert: "to inches if in feet/cm"
+
+  weight:
+    type: number
+    unit: lbs
+    extract_from: "weight in any format"
+    convert: "to lbs if in kg"
+
+  bodyFatPercentage:
+    type: number
+    optional: true
+    extract_from: "body fat estimate or description"
+    inference: "Can estimate from descriptions like 'lean', 'some extra weight'"
+
+  fitnessLevel:
+    type: enum
+    values: ["beginner", "intermediate", "advanced", "elite"]
+    infer_from: ["experience", "training_history", "current_lifts"]
+
+  goals:
+    type: array
+    items:
+      type: string
+      description: string
+      category: enum
+      targetValue: number
+      targetDate: date
+    extract_from: "mentioned goals and targets"
+
+  limitations:
+    type: array
+    items:
+      type: string
+      description: string
+      affectedAreas: array
+      severity: enum
+    extract_from: "injuries, conditions, restrictions"
+
+  personalRecords:
+    type: array
+    items:
+      exercise: string
+      value: number
+      unit: string
+    extract_from: "mentioned maxes, PRs, benchmarks"
+
+  preferences:
+    type: object
+    properties:
+      workoutDuration: number  # minutes
+      equipment: array
+      trainingStyles: array
+    extract_from: "stated preferences"
+
+# Validation rules
+validation:
+  require_before_complete:
+    - name
+    - age
+    - primary_goal
+
+  warn_if_missing:
+    - height
+    - weight
+    - fitness_level
+
+# Phase transitions
+transitions:
+  next_phase_triggers:
+    - "User provided required data for current phase"
+    - "User explicitly wants to move on"
+    - "5+ exchanges in current phase without new data"
+
+  revisit_triggers:
+    - "User mentions something from a previous phase"
+    - "User wants to correct something"

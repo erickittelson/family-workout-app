@@ -19,7 +19,7 @@ export async function GET(
     const plan = await db.query.workoutPlans.findFirst({
       where: and(
         eq(workoutPlans.id, id),
-        eq(workoutPlans.familyId, session.familyId)
+        eq(workoutPlans.circleId, session.circleId)
       ),
       with: {
         exercises: {
@@ -78,7 +78,7 @@ export async function PUT(
     const existingPlan = await db.query.workoutPlans.findFirst({
       where: and(
         eq(workoutPlans.id, id),
-        eq(workoutPlans.familyId, session.familyId)
+        eq(workoutPlans.circleId, session.circleId)
       ),
     });
 
@@ -146,7 +146,7 @@ export async function DELETE(
     const existingPlan = await db.query.workoutPlans.findFirst({
       where: and(
         eq(workoutPlans.id, id),
-        eq(workoutPlans.familyId, session.familyId)
+        eq(workoutPlans.circleId, session.circleId)
       ),
     });
 

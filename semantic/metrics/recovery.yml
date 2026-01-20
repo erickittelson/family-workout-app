@@ -1,0 +1,202 @@
+# Recovery Metrics
+# Muscle recovery, fatigue, and training readiness
+
+metric: recovery
+version: "1.0.0"
+description: "Tracks muscle recovery and training readiness"
+
+# Recovery time estimates (hours)
+recovery_times:
+  muscle_groups:
+    chest: 48
+    back: 48
+    shoulders: 48
+    biceps: 36
+    triceps: 36
+    forearms: 24
+    abs: 24
+    obliques: 24
+    lower_back: 72
+    glutes: 48
+    quads: 48
+    hamstrings: 48
+    calves: 36
+    hip_flexors: 36
+
+  modifiers:
+    high_volume: 1.5      # > 20 sets for muscle
+    high_intensity: 1.3   # Average RPE > 8
+    eccentric_focus: 1.4  # Slow negatives, etc.
+    beginner: 1.5         # Less trained = slower recovery
+    advanced: 0.8         # More trained = faster recovery
+    sleep_poor: 1.3       # < 6 hours sleep
+    stress_high: 1.2      # High life stress
+
+# Key metrics
+definitions:
+  muscle_recovery_status:
+    description: "Recovery state for each muscle group"
+    formula: |
+      WITH last_worked AS (
+        SELECT
+          unnest(e.muscle_groups) as muscle,
+          MAX(ws.date) as last_date,
+          SUM(es.actual_reps * COALESCE(es.rpe, 7) / 10) as last_load
+        FROM workout_sessions ws
+        JOIN workout_session_exercises wse ON ws.id = wse.session_id
+        JOIN exercises e ON wse.exercise_id = e.id
+        JOIN exercise_sets es ON wse.id = es.session_exercise_id
+        WHERE ws.member_id = $1
+          AND ws.status = 'completed'
+          AND ws.date >= NOW() - INTERVAL '7 days'
+        GROUP BY unnest(e.muscle_groups)
+      )
+      SELECT
+        muscle,
+        last_date,
+        EXTRACT(EPOCH FROM (NOW() - last_date)) / 3600 as hours_since,
+        CASE
+          WHEN hours_since >= recovery_hours THEN 'recovered'
+          WHEN hours_since >= recovery_hours * 0.7 THEN 'nearly_ready'
+          ELSE 'recovering'
+        END as status
+      FROM last_worked lw
+      CROSS JOIN LATERAL (
+        SELECT CASE muscle
+          WHEN 'chest' THEN 48
+          WHEN 'back' THEN 48
+          WHEN 'quads' THEN 48
+          WHEN 'hamstrings' THEN 48
+          -- etc.
+          ELSE 48
+        END as recovery_hours
+      ) r
+    states:
+      recovered: "Ready to train"
+      nearly_ready: "Can train if needed, not fully recovered"
+      recovering: "Should rest"
+
+  weekly_fatigue_score:
+    description: "Accumulated fatigue over the week"
+    formula: |
+      SELECT
+        SUM(
+          (SELECT SUM(es.actual_reps * COALESCE(es.rpe, 7))
+           FROM workout_session_exercises wse
+           JOIN exercise_sets es ON wse.id = es.session_exercise_id
+           WHERE wse.session_id = ws.id)
+        ) as total_load,
+        COUNT(*) as sessions
+      FROM workout_sessions ws
+      WHERE ws.member_id = $1
+        AND ws.status = 'completed'
+        AND ws.date >= DATE_TRUNC('week', NOW())
+    interpretation:
+      low: "< 100 - light week, room for more"
+      moderate: "100-200 - balanced training"
+      high: "200-300 - demanding week"
+      very_high: "> 300 - consider rest"
+
+  readiness_score:
+    description: "Overall training readiness (0-100)"
+    components:
+      muscle_recovery: 40     # Weight in total score
+      sleep_quality: 25
+      stress_level: 15
+      previous_session_rpe: 10
+      days_since_rest: 10
+    formula: |
+      Weighted average of components, adjusted by context notes
+
+  needs_deload:
+    description: "Whether a deload week is needed"
+    triggers:
+      - "4+ weeks of progressive overload"
+      - "Multiple sessions with RPE > 9"
+      - "Declining performance (same weight, fewer reps)"
+      - "Persistent fatigue/soreness"
+      - "Sleep or motivation issues"
+
+# Recovery recommendations
+recommendations:
+  active_recovery:
+    description: "Light activity to promote recovery"
+    activities:
+      - "Light cardio (walking, cycling)"
+      - "Mobility work"
+      - "Foam rolling"
+      - "Light stretching"
+    duration: "20-30 minutes"
+
+  full_rest:
+    description: "Complete rest from training"
+    when:
+      - "Illness"
+      - "Injury"
+      - "Extreme fatigue"
+      - "High life stress"
+    frequency: "1-2 days per week minimum"
+
+  deload_protocol:
+    description: "Planned recovery week"
+    approach:
+      volume: "Reduce to 50-60%"
+      intensity: "Keep weight same, fewer sets"
+      frequency: "May reduce by 1 session"
+    duration: "1 week"
+    frequency: "Every 4-6 weeks"
+
+# Query examples
+examples:
+  - question: "Which muscles are recovered?"
+    sql: |
+      WITH muscle_work AS (
+        SELECT
+          unnest(e.muscle_groups) as muscle,
+          MAX(ws.date) as last_worked
+        FROM workout_sessions ws
+        JOIN workout_session_exercises wse ON ws.id = wse.session_id
+        JOIN exercises e ON wse.exercise_id = e.id
+        WHERE ws.member_id = $1 AND ws.status = 'completed'
+        GROUP BY unnest(e.muscle_groups)
+      )
+      SELECT
+        muscle,
+        last_worked,
+        EXTRACT(EPOCH FROM (NOW() - last_worked)) / 3600 as hours_ago,
+        CASE
+          WHEN EXTRACT(EPOCH FROM (NOW() - last_worked)) / 3600 >= 48 THEN 'ready'
+          ELSE 'recovering'
+        END as status
+      FROM muscle_work
+
+  - question: "Should I take a rest day?"
+    sql: |
+      SELECT
+        COUNT(*) FILTER (WHERE date >= NOW() - INTERVAL '3 days') as last_3_days,
+        AVG(
+          (SELECT AVG(es.rpe)
+           FROM workout_session_exercises wse
+           JOIN exercise_sets es ON wse.id = es.session_exercise_id
+           WHERE wse.session_id = ws.id AND es.rpe IS NOT NULL)
+        ) as avg_rpe
+      FROM workout_sessions ws
+      WHERE ws.member_id = $1 AND ws.status = 'completed'
+
+# Insights
+insights:
+  overtraining_warning:
+    condition: "Same muscle hit 3+ times in 4 days"
+    template: "Your {muscle} has been worked hard - {count} sessions in 4 days. Give it some rest."
+
+  recovery_complete:
+    condition: "All major muscles recovered"
+    template: "All systems go! Every major muscle group is recovered and ready to train."
+
+  deload_recommendation:
+    condition: "needs_deload = true"
+    template: "You've been pushing hard for {weeks} weeks. A deload week would help your body recover and come back stronger."
+
+  rest_day_suggestion:
+    condition: "3+ sessions in last 3 days"
+    template: "You've trained {count} times in the last 3 days. A rest day would do you good."

@@ -1,0 +1,132 @@
+# Member Entity
+# Circle member profile, metrics, and preferences
+
+entity: member
+version: "1.0.0"
+description: "A person who belongs to one or more circles"
+table: circle_members
+
+# Primary identifier
+primary_key: id
+foreign_keys:
+  - field: circle_id
+    references: circles.id
+  - field: user_id
+    references: neon_auth.users.id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier for the member"
+
+  - name: name
+    type: string
+    description: "Display name for the member"
+    required: true
+
+  - name: profile_picture
+    type: string
+    description: "URL to member's profile picture"
+
+  - name: date_of_birth
+    type: timestamp
+    description: "Birth date for age calculations"
+
+  - name: gender
+    type: enum
+    values: ["male", "female", "other"]
+    description: "Gender for personalized recommendations"
+
+  - name: role
+    type: enum
+    values: ["owner", "admin", "member"]
+    description: "Role within the circle"
+    default: "member"
+
+# Related data (from other tables)
+relations:
+  metrics:
+    table: member_metrics
+    type: one_to_many
+    description: "Historical body metrics (weight, body fat, etc.)"
+
+  limitations:
+    table: member_limitations
+    type: one_to_many
+    description: "Physical limitations and injuries"
+
+  goals:
+    table: goals
+    type: one_to_many
+    description: "Fitness goals with milestones"
+
+  personal_records:
+    table: personal_records
+    type: one_to_many
+    description: "PRs for various exercises"
+
+  skills:
+    table: member_skills
+    type: one_to_many
+    description: "Athletic skills (gymnastics, calisthenics)"
+
+  workout_sessions:
+    table: workout_sessions
+    type: one_to_many
+    description: "Logged workout sessions"
+
+  context_snapshot:
+    table: member_context_snapshot
+    type: one_to_one
+    description: "Pre-computed AI context for fast loading"
+
+# Computed/derived properties
+computed:
+  age:
+    formula: "EXTRACT(YEAR FROM AGE(NOW(), date_of_birth))"
+    description: "Current age in years"
+
+  current_weight:
+    source: "Latest weight from member_metrics"
+    sql: |
+      SELECT weight FROM member_metrics
+      WHERE member_id = $1
+      ORDER BY date DESC LIMIT 1
+
+  fitness_level:
+    source: "Latest fitness level from member_metrics"
+
+  training_age:
+    description: "How long they've been training"
+    infer_from: ["fitness_level", "personal_records", "workout_history"]
+
+# Query examples
+examples:
+  - question: "What's the member's current weight?"
+    sql: |
+      SELECT mm.weight
+      FROM member_metrics mm
+      WHERE mm.member_id = $1
+      ORDER BY mm.date DESC LIMIT 1
+
+  - question: "What are the member's active limitations?"
+    sql: |
+      SELECT type, description, severity, affected_areas
+      FROM member_limitations
+      WHERE member_id = $1 AND active = true
+
+  - question: "What are the member's PRs?"
+    sql: |
+      SELECT e.name as exercise, pr.value, pr.unit, pr.rep_max
+      FROM personal_records pr
+      JOIN exercises e ON pr.exercise_id = e.id
+      WHERE pr.member_id = $1 AND pr.record_type = 'all_time'
+      ORDER BY pr.date DESC
+
+# Synonyms for natural language understanding
+synonyms:
+  member: [user, person, athlete, trainee, client]
+  profile: [account, info, details]
+  weight: [mass, body weight]
+  height: [stature, how tall]

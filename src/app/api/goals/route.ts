@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { goals, milestones, familyMembers } from "@/lib/db/schema";
+import { goals, milestones, circleMembers } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 
 export async function GET() {
@@ -11,9 +11,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get family member IDs
-    const members = await db.query.familyMembers.findMany({
-      where: eq(familyMembers.familyId, session.familyId),
+    // Get circle member IDs
+    const members = await db.query.circleMembers.findMany({
+      where: eq(circleMembers.circleId, session.circleId),
       columns: { id: true, name: true },
     });
 
@@ -83,11 +83,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify member belongs to this family
-    const member = await db.query.familyMembers.findFirst({
+    // Verify member belongs to this circle
+    const member = await db.query.circleMembers.findFirst({
       where: and(
-        eq(familyMembers.id, memberId),
-        eq(familyMembers.familyId, session.familyId)
+        eq(circleMembers.id, memberId),
+        eq(circleMembers.circleId, session.circleId)
       ),
     });
 

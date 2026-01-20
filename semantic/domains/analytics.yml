@@ -1,0 +1,143 @@
+# Analytics Domain
+# Progress tracking, trends, insights, and performance analysis
+
+domain: analytics
+version: "1.0.0"
+description: "Progress tracking, trends, and performance insights"
+
+# Analytics categories
+categories:
+  strength_progress:
+    description: "Tracking strength gains over time"
+    metrics: [1rm_progress, volume_progression, rep_maxes]
+
+  consistency:
+    description: "Workout adherence and habits"
+    metrics: [weekly_frequency, streak_days, adherence_rate]
+
+  body_composition:
+    description: "Weight, body fat, and physique changes"
+    metrics: [weight_trend, body_fat_trend, lean_mass_estimate]
+
+  recovery:
+    description: "Recovery status and readiness"
+    metrics: [muscle_recovery, fatigue_index, readiness_score]
+
+  goal_progress:
+    description: "Progress toward defined goals"
+    metrics: [goal_completion_rate, milestone_progress]
+
+# User intents
+intents:
+  view_progress:
+    description: "User wants to see their progress"
+    examples:
+      - "How much have I progressed?"
+      - "Show my gains"
+      - "Am I getting stronger?"
+    data_needed: [personal_records, workout_history, goals]
+
+  compare_periods:
+    description: "Compare performance across time periods"
+    examples:
+      - "Compare this month to last month"
+      - "How was my volume last week vs this week?"
+    data_needed: [workout_sessions, date_range]
+
+  identify_trends:
+    description: "Find patterns in training data"
+    examples:
+      - "What are my weak points?"
+      - "Which muscles am I neglecting?"
+      - "Show my training patterns"
+
+  check_recovery:
+    description: "Assess recovery and readiness"
+    examples:
+      - "Am I recovered enough to train legs?"
+      - "What muscles are ready?"
+      - "Should I take a rest day?"
+
+# Query patterns
+query_patterns:
+  strength_progression:
+    description: "Track 1RM progress for an exercise over time"
+    sql: |
+      SELECT
+        pr.date,
+        pr.value as weight,
+        pr.rep_max,
+        e.name as exercise
+      FROM personal_records pr
+      JOIN exercises e ON pr.exercise_id = e.id
+      WHERE pr.member_id = $1
+        AND pr.record_type = 'all_time'
+        AND e.name ILIKE $2
+      ORDER BY pr.date
+
+  volume_trend:
+    description: "Weekly volume trend over time"
+    sql: |
+      SELECT
+        DATE_TRUNC('week', ws.date) as week,
+        SUM(es.actual_reps * COALESCE(es.actual_weight, 1)) as total_volume,
+        COUNT(DISTINCT ws.id) as sessions
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE ws.member_id = $1
+        AND ws.date >= NOW() - INTERVAL '12 weeks'
+        AND es.completed = true
+      GROUP BY DATE_TRUNC('week', ws.date)
+      ORDER BY week
+
+  muscle_balance:
+    description: "Analyze muscle group training distribution"
+    sql: |
+      SELECT
+        unnest(e.muscle_groups) as muscle,
+        COUNT(*) as exercise_count,
+        SUM(es.actual_reps) as total_reps
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercises e ON wse.exercise_id = e.id
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE ws.member_id = $1
+        AND ws.date >= NOW() - INTERVAL '30 days'
+        AND es.completed = true
+      GROUP BY unnest(e.muscle_groups)
+      ORDER BY total_reps DESC
+
+  recovery_status:
+    description: "Get muscle recovery status from context snapshot"
+    sql: |
+      SELECT
+        muscle_recovery_status,
+        last_workout_date,
+        needs_deload
+      FROM member_context_snapshot
+      WHERE member_id = $1
+
+# Insight generation patterns
+insight_patterns:
+  strength_gain:
+    condition: "1RM increased by 5%+ in 4 weeks"
+    template: "Your {exercise} has improved {percent}% in the last month. {encouragement}"
+
+  consistency_streak:
+    condition: "3+ workouts per week for 4+ weeks"
+    template: "You've been incredibly consistent - {weeks} weeks of {avg_sessions}/week. {impact}"
+
+  neglected_muscle:
+    condition: "Muscle group worked <2x in 2 weeks"
+    template: "Your {muscle} hasn't gotten much attention lately. Consider adding {exercise_suggestion}."
+
+  overtraining_warning:
+    condition: "Same muscle hit 4+ times in a week"
+    template: "Your {muscle} has been hit hard this week. Recovery is when growth happens."
+
+# Feature intro
+feature_intro: |
+  I track everything - your lifts, your consistency, your progress.
+  I'll spot trends you might miss and let you know when you're
+  crushing it or when something needs attention.

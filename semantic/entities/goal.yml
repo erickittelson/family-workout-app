@@ -1,0 +1,131 @@
+# Goal Entity
+# Fitness goals with milestones
+
+entity: goal
+version: "1.0.0"
+description: "A fitness goal with optional milestones"
+table: goals
+
+# Primary identifier
+primary_key: id
+foreign_keys:
+  - field: member_id
+    references: circle_members.id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier"
+
+  - name: title
+    type: string
+    description: "Goal title"
+    required: true
+
+  - name: description
+    type: string
+    description: "Detailed goal description"
+
+  - name: category
+    type: enum
+    values: ["strength", "cardio", "skill", "weight", "flexibility", "endurance"]
+    description: "Type of goal"
+    required: true
+
+  - name: target_value
+    type: number
+    description: "Numeric target (e.g., 225 for bench press)"
+
+  - name: target_unit
+    type: string
+    description: "Unit for target (lbs, seconds, reps, miles)"
+
+  - name: current_value
+    type: number
+    description: "Current progress toward target"
+
+  - name: target_date
+    type: timestamp
+    description: "When to achieve the goal"
+
+  - name: status
+    type: enum
+    values: ["active", "completed", "abandoned"]
+    description: "Current goal status"
+    default: "active"
+
+  - name: ai_generated
+    type: boolean
+    description: "Whether AI suggested this goal"
+    default: false
+
+  - name: completed_at
+    type: timestamp
+    description: "When the goal was achieved"
+
+# Computed properties
+computed:
+  progress_percent:
+    formula: "(current_value / NULLIF(target_value, 0)) * 100"
+    description: "Percentage progress toward goal"
+
+  days_remaining:
+    formula: "EXTRACT(DAY FROM (target_date - NOW()))"
+    description: "Days until target date"
+
+  is_on_track:
+    formula: |
+      Compare current_value progress rate to required rate for target_date
+    description: "Whether progress is sufficient to meet deadline"
+
+# Relations
+relations:
+  milestones:
+    table: milestones
+    type: one_to_many
+    description: "Intermediate checkpoints"
+    fields:
+      - order: integer
+      - title: string
+      - target_value: number
+      - target_date: timestamp
+      - status: enum ["pending", "completed"]
+
+  member:
+    table: circle_members
+    type: many_to_one
+    description: "Member who owns this goal"
+
+# Query examples
+examples:
+  - question: "What are my active goals?"
+    sql: |
+      SELECT title, category, target_value, target_unit, current_value,
+        ROUND((current_value / NULLIF(target_value, 0)) * 100) as progress
+      FROM goals
+      WHERE member_id = $1 AND status = 'active'
+      ORDER BY target_date
+
+  - question: "Which goals are close to completion?"
+    sql: |
+      SELECT title, target_value, current_value
+      FROM goals
+      WHERE member_id = $1
+        AND status = 'active'
+        AND current_value >= target_value * 0.9
+
+  - question: "What milestones have I completed this month?"
+    sql: |
+      SELECT g.title as goal, m.title as milestone, m.completed_at
+      FROM goals g
+      JOIN milestones m ON g.id = m.goal_id
+      WHERE g.member_id = $1
+        AND m.status = 'completed'
+        AND m.completed_at >= DATE_TRUNC('month', NOW())
+
+# Synonyms
+synonyms:
+  goal: [target, objective, aim]
+  milestone: [checkpoint, step, progress marker]
+  completed: [achieved, reached, done]

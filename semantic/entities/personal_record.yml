@@ -1,0 +1,118 @@
+# Personal Record Entity
+# PRs and benchmarks
+
+entity: personal_record
+version: "1.0.0"
+description: "A personal record (PR) for an exercise"
+table: personal_records
+
+# Primary identifier
+primary_key: id
+foreign_keys:
+  - field: member_id
+    references: circle_members.id
+  - field: exercise_id
+    references: exercises.id
+  - field: session_id
+    references: workout_sessions.id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier"
+
+  - name: record_type
+    type: enum
+    values: ["all_time", "current"]
+    description: "Whether this is the best ever or current ability"
+    default: "current"
+
+  - name: value
+    type: number
+    description: "The record value"
+    required: true
+
+  - name: unit
+    type: string
+    description: "Unit of measurement"
+    required: true
+    examples: ["lbs", "kg", "reps", "seconds", "meters", "miles"]
+
+  - name: rep_max
+    type: integer
+    description: "Rep max category (1RM, 3RM, 5RM, etc.)"
+
+  - name: date
+    type: timestamp
+    description: "When the record was set"
+    required: true
+
+  - name: notes
+    type: string
+    description: "Additional context"
+
+# Query examples
+examples:
+  - question: "What are my current PRs?"
+    sql: |
+      SELECT e.name as exercise, pr.value, pr.unit, pr.rep_max, pr.date
+      FROM personal_records pr
+      JOIN exercises e ON pr.exercise_id = e.id
+      WHERE pr.member_id = $1
+        AND pr.record_type = 'all_time'
+      ORDER BY pr.date DESC
+
+  - question: "What's my bench press 1RM?"
+    sql: |
+      SELECT pr.value, pr.unit, pr.date
+      FROM personal_records pr
+      JOIN exercises e ON pr.exercise_id = e.id
+      WHERE pr.member_id = $1
+        AND e.name ILIKE '%bench press%'
+        AND pr.rep_max = 1
+        AND pr.record_type = 'all_time'
+      ORDER BY pr.date DESC
+      LIMIT 1
+
+  - question: "How have my deadlift PRs progressed?"
+    sql: |
+      SELECT pr.value, pr.unit, pr.date
+      FROM personal_records pr
+      JOIN exercises e ON pr.exercise_id = e.id
+      WHERE pr.member_id = $1
+        AND e.name ILIKE '%deadlift%'
+        AND pr.record_type = 'all_time'
+      ORDER BY pr.date
+
+  - question: "What PRs did I set this month?"
+    sql: |
+      SELECT e.name, pr.value, pr.unit, pr.date
+      FROM personal_records pr
+      JOIN exercises e ON pr.exercise_id = e.id
+      WHERE pr.member_id = $1
+        AND pr.record_type = 'all_time'
+        AND pr.date >= DATE_TRUNC('month', NOW())
+      ORDER BY pr.date DESC
+
+# Calculated 1RM formulas
+formulas:
+  epley:
+    description: "Epley formula for 1RM estimation"
+    formula: "weight * (1 + reps/30)"
+
+  brzycki:
+    description: "Brzycki formula for 1RM estimation"
+    formula: "weight * 36 / (37 - reps)"
+
+  lombardi:
+    description: "Lombardi formula for 1RM estimation"
+    formula: "weight * reps^0.1"
+
+# Synonyms
+synonyms:
+  personal_record: [PR, personal best, PB, max, record]
+  1rm: [one rep max, max single, 1 rep max]
+  bench_press: [bench, flat bench, barbell bench]
+  squat: [back squat, barbell squat]
+  deadlift: [conventional deadlift, sumo deadlift]

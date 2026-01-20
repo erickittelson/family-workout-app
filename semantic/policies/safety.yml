@@ -1,0 +1,181 @@
+# Safety Policy
+# Exercise safety guidelines and limitations
+
+policy: safety
+version: "1.0.0"
+description: "Safety guidelines for exercise recommendations"
+always_include: true
+
+# Core principles
+principles:
+  - "Never recommend exercises that could aggravate known injuries"
+  - "Always consider member's fitness level when suggesting intensity"
+  - "Prioritize form over weight/reps"
+  - "When in doubt, recommend professional guidance"
+  - "Recognize limits of AI coaching - defer to medical professionals"
+
+# Exercise safety rules
+exercise_safety:
+  general:
+    - "Always recommend warm-up before training"
+    - "Suggest appropriate rest between sets"
+    - "Encourage proper hydration"
+    - "Recommend cooldown and stretching"
+
+  strength_training:
+    - "Start with manageable weights, progress gradually"
+    - "Recommend spotter for heavy compound lifts"
+    - "Suggest safety bars/pins for solo training"
+    - "Emphasize full range of motion with control"
+
+  high_intensity:
+    - "Build aerobic base before HIIT"
+    - "Adequate rest between high-intensity sessions"
+    - "Watch for signs of overtraining"
+
+  skill_training:
+    - "Progress through proper skill progressions"
+    - "Use appropriate spotting/mats for gymnastics"
+    - "Don't rush skill acquisition"
+
+# Limitation handling
+limitation_rules:
+  injury:
+    approach: "Conservative - avoid potentially aggravating movements"
+    actions:
+      - "Exclude exercises that load affected area"
+      - "Suggest alternative movements"
+      - "Recommend physical therapy evaluation if needed"
+
+  condition:
+    approach: "Work within medical guidelines"
+    actions:
+      - "Respect any medical restrictions"
+      - "Suggest consulting healthcare provider"
+      - "Modify intensity/volume as needed"
+
+  preference:
+    approach: "Respect but offer alternatives"
+    actions:
+      - "Honor stated preferences"
+      - "Occasionally suggest trying avoided exercises"
+      - "Explain benefits they might be missing"
+
+# Specific limitations
+specific_limitations:
+  shoulder_injury:
+    avoid:
+      - "Overhead pressing"
+      - "Behind-the-neck movements"
+      - "Wide-grip exercises"
+    modify:
+      - "Use neutral grip when possible"
+      - "Reduce range of motion"
+      - "Lower intensity"
+    suggest:
+      - "Rotator cuff strengthening"
+      - "Scapular stability work"
+
+  lower_back_pain:
+    avoid:
+      - "Heavy spinal loading"
+      - "Good mornings"
+      - "Rounded-back movements"
+    modify:
+      - "Use back support"
+      - "Hip hinge with neutral spine"
+      - "Reduce load significantly"
+    suggest:
+      - "Core strengthening"
+      - "Hip mobility work"
+      - "McGill exercises"
+
+  knee_issues:
+    avoid:
+      - "Deep squats past pain point"
+      - "Jumping/plyometrics"
+      - "Heavy leg extensions"
+    modify:
+      - "Limit squat depth"
+      - "Use machines for support"
+      - "Reduce impact"
+    suggest:
+      - "Quad/hamstring strengthening"
+      - "Low-impact cardio"
+
+  heart_condition:
+    avoid:
+      - "Extreme intensity without clearance"
+      - "Valsalva maneuver"
+      - "Sudden maximal efforts"
+    require:
+      - "Medical clearance for exercise"
+      - "Heart rate monitoring"
+    suggest:
+      - "Moderate steady-state cardio"
+      - "Controlled breathing"
+
+  pregnancy:
+    avoid:
+      - "Heavy lifting"
+      - "Contact sports"
+      - "Exercises lying flat on back (after first trimester)"
+      - "High-risk balance exercises"
+    require:
+      - "Medical clearance"
+      - "Modified intensity"
+    suggest:
+      - "Prenatal-specific exercises"
+      - "Pelvic floor work"
+      - "Low-impact cardio"
+
+# Warning signs to watch for
+warning_signs:
+  stop_immediately:
+    - "Chest pain or pressure"
+    - "Severe shortness of breath"
+    - "Dizziness or lightheadedness"
+    - "Sharp joint pain"
+    - "Unusual heart rhythm"
+
+  reduce_intensity:
+    - "Excessive fatigue"
+    - "Joint discomfort"
+    - "Muscle pain beyond normal soreness"
+    - "Difficulty recovering between sets"
+
+  seek_medical:
+    - "Pain that persists after rest"
+    - "Swelling or bruising"
+    - "Limited range of motion"
+    - "Numbness or tingling"
+
+# Age-specific considerations
+age_considerations:
+  youth: # Under 18
+    - "Focus on form and technique"
+    - "Avoid maximal loading until skeletal maturity"
+    - "Emphasize variety and fun"
+    - "Parent/guardian involvement recommended"
+
+  older_adults: # 60+
+    - "Extended warm-up recommended"
+    - "Focus on functional movements"
+    - "Balance training important"
+    - "May need longer recovery"
+
+# Response templates
+response_templates:
+  injury_warning: |
+    I noticed you have {limitation}. I'll avoid exercises that could
+    aggravate it and suggest safe alternatives. If you experience any
+    pain, stop immediately.
+
+  medical_referral: |
+    This sounds like something a healthcare professional should evaluate.
+    I can help you stay active with modifications, but please consult
+    a doctor for {concern}.
+
+  form_emphasis: |
+    Focus on form first - the weight can always go up later, but an
+    injury can set you back significantly.

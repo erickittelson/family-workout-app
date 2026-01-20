@@ -1,0 +1,358 @@
+# Exercises Taxonomy - Open Semantic Interchange
+# Defines exercise classification, muscle groups, and equipment mapping
+# For AI exercise selection and recommendation
+
+version: "1.0"
+last_updated: "2026-01-19"
+
+# =============================================================================
+# MUSCLE GROUP TAXONOMY
+# =============================================================================
+muscle_groups:
+  upper_body:
+    push:
+      chest:
+        primary: ["pectoralis major", "pectoralis minor"]
+        exercises: ["Bench Press", "Push-ups", "Dumbbell Flyes", "Cable Crossover"]
+        recovery_hours: 48
+
+      shoulders:
+        anterior:
+          primary: ["anterior deltoid"]
+          exercises: ["Overhead Press", "Front Raise", "Arnold Press"]
+        lateral:
+          primary: ["lateral deltoid"]
+          exercises: ["Lateral Raise", "Upright Row"]
+        posterior:
+          primary: ["posterior deltoid"]
+          exercises: ["Face Pulls", "Reverse Flyes", "Rear Delt Row"]
+        recovery_hours: 48
+
+      triceps:
+        primary: ["triceps brachii"]
+        exercises: ["Tricep Pushdown", "Skull Crushers", "Dips", "Close-Grip Bench"]
+        recovery_hours: 48
+
+    pull:
+      back:
+        lats:
+          primary: ["latissimus dorsi"]
+          exercises: ["Pull-ups", "Lat Pulldown", "Straight Arm Pulldown"]
+        upper_back:
+          primary: ["rhomboids", "middle trapezius"]
+          exercises: ["Barbell Row", "Seated Cable Row", "T-Bar Row"]
+        lower_back:
+          primary: ["erector spinae"]
+          exercises: ["Deadlift", "Good Mornings", "Back Extensions"]
+          recovery_hours: 72
+        recovery_hours: 48
+
+      biceps:
+        primary: ["biceps brachii", "brachialis"]
+        exercises: ["Barbell Curl", "Hammer Curls", "Preacher Curls"]
+        recovery_hours: 48
+
+      forearms:
+        primary: ["forearm flexors", "forearm extensors"]
+        exercises: ["Wrist Curls", "Reverse Curls", "Farmer's Walks"]
+        recovery_hours: 48
+
+  lower_body:
+    quadriceps:
+      primary: ["rectus femoris", "vastus lateralis", "vastus medialis", "vastus intermedius"]
+      exercises: ["Squat", "Leg Press", "Leg Extension", "Lunges"]
+      recovery_hours: 72
+
+    hamstrings:
+      primary: ["biceps femoris", "semitendinosus", "semimembranosus"]
+      exercises: ["Romanian Deadlift", "Leg Curl", "Nordic Curls", "Good Mornings"]
+      recovery_hours: 72
+
+    glutes:
+      primary: ["gluteus maximus", "gluteus medius", "gluteus minimus"]
+      exercises: ["Hip Thrust", "Bulgarian Split Squat", "Cable Kickback"]
+      recovery_hours: 72
+
+    calves:
+      primary: ["gastrocnemius", "soleus"]
+      exercises: ["Standing Calf Raise", "Seated Calf Raise"]
+      recovery_hours: 48
+
+    hip_flexors:
+      primary: ["iliopsoas", "rectus femoris"]
+      exercises: ["Hanging Leg Raise", "Hip Flexor March"]
+      recovery_hours: 48
+
+  core:
+    abs:
+      primary: ["rectus abdominis"]
+      exercises: ["Plank", "Crunches", "Leg Raises", "Ab Wheel"]
+      recovery_hours: 24
+
+    obliques:
+      primary: ["external oblique", "internal oblique"]
+      exercises: ["Russian Twist", "Side Plank", "Wood Chops"]
+      recovery_hours: 24
+
+    transverse:
+      primary: ["transverse abdominis"]
+      exercises: ["Dead Bug", "Pallof Press", "Vacuum"]
+      recovery_hours: 24
+
+# =============================================================================
+# EXERCISE CATEGORIES
+# =============================================================================
+categories:
+  strength:
+    description: "Resistance exercises for building muscle and strength"
+    subcategories:
+      compound:
+        description: "Multi-joint movements"
+        examples: ["Squat", "Deadlift", "Bench Press", "Overhead Press", "Row"]
+        priority: "high"
+
+      isolation:
+        description: "Single-joint movements"
+        examples: ["Bicep Curl", "Tricep Extension", "Leg Curl", "Lateral Raise"]
+        priority: "medium"
+
+      power:
+        description: "Explosive strength movements"
+        examples: ["Power Clean", "Snatch", "Push Press", "Kettlebell Swing"]
+        requires: "proper_technique"
+
+  cardio:
+    description: "Cardiovascular conditioning"
+    subcategories:
+      steady_state:
+        description: "Low-moderate intensity, longer duration"
+        examples: ["Running", "Cycling", "Swimming", "Rowing"]
+        heart_rate_zone: [60, 75]
+
+      hiit:
+        description: "High-intensity interval training"
+        examples: ["Sprints", "Assault Bike Intervals", "Burpees"]
+        heart_rate_zone: [80, 95]
+
+      liss:
+        description: "Low-intensity steady state"
+        examples: ["Walking", "Light Cycling", "Incline Treadmill Walk"]
+        heart_rate_zone: [50, 65]
+
+  plyometric:
+    description: "Explosive jumping and bounding movements"
+    examples: ["Box Jump", "Broad Jump", "Depth Jump", "Bounding"]
+    caution: "High impact, requires good landing mechanics"
+
+  flexibility:
+    description: "Stretching and mobility work"
+    subcategories:
+      static:
+        description: "Hold stretches for 30-60 seconds"
+        when: "post_workout"
+      dynamic:
+        description: "Active movement through range of motion"
+        when: "warmup"
+      pnf:
+        description: "Contract-relax stretching"
+        when: "dedicated_mobility_session"
+
+  skill:
+    description: "Technique-focused movements"
+    examples: ["Handstand", "Muscle-up", "Pistol Squat", "L-Sit"]
+    programming_note: "Practice before fatigue sets in"
+
+# =============================================================================
+# EQUIPMENT TAXONOMY
+# =============================================================================
+equipment:
+  free_weights:
+    barbell:
+      exercises: ["Squat", "Deadlift", "Bench Press", "Overhead Press", "Row"]
+      weight_increments: [2.5, 5, 10, 25, 45]
+      unit: "lbs"
+
+    dumbbell:
+      exercises: ["Dumbbell Press", "Rows", "Curls", "Lateral Raises"]
+      weight_range: [5, 150]
+      increment: 5
+
+    kettlebell:
+      exercises: ["Swings", "Goblet Squat", "Turkish Get-Up", "Cleans"]
+      common_weights: [8, 12, 16, 20, 24, 28, 32]
+      unit: "kg"
+
+    plates:
+      types: ["bumper", "iron", "calibrated"]
+      standard_set: [2.5, 5, 10, 25, 35, 45]
+
+  machines:
+    cable:
+      exercises: ["Cable Crossover", "Lat Pulldown", "Cable Row", "Face Pulls"]
+      attachment_types: ["rope", "straight_bar", "v_bar", "single_handle"]
+
+    plate_loaded:
+      exercises: ["Leg Press", "Hack Squat", "Chest Press Machine"]
+
+    selectorized:
+      exercises: ["Machine Flyes", "Leg Extension", "Leg Curl"]
+      advantage: "beginner_friendly"
+
+  cardio_machines:
+    treadmill:
+      metrics: ["distance", "time", "pace", "incline", "calories"]
+      exercises: ["Running", "Walking", "Incline Walk", "Sprints"]
+
+    rower:
+      metrics: ["meters", "calories", "split_time", "strokes_per_minute"]
+      exercises: ["Row for Distance", "Row for Calories", "AMRAP Row"]
+
+    assault_bike:
+      metrics: ["calories", "distance", "rpm", "watts"]
+      exercises: ["Bike Sprints", "Steady State", "Tabata"]
+
+    ski_erg:
+      metrics: ["meters", "calories", "split_time"]
+      exercises: ["Ski for Distance", "Ski Sprints"]
+
+  bodyweight:
+    pull_up_bar:
+      exercises: ["Pull-ups", "Chin-ups", "Hanging Leg Raise", "Muscle-ups"]
+
+    rings:
+      exercises: ["Ring Dips", "Ring Rows", "Muscle-ups", "Ring Push-ups"]
+
+    parallettes:
+      exercises: ["L-Sit", "Handstand Push-ups", "Dips"]
+
+    plyo_box:
+      exercises: ["Box Jumps", "Step-ups", "Box Squats"]
+      common_heights: [20, 24, 30]
+      unit: "inches"
+
+  accessories:
+    resistance_bands:
+      types: ["loop", "tube", "pull_up_assist"]
+      use_cases: ["warmup", "activation", "assistance", "added_resistance"]
+
+    foam_roller:
+      use_case: "myofascial_release"
+
+    ab_wheel:
+      exercises: ["Ab Wheel Rollout"]
+
+# =============================================================================
+# MOVEMENT PATTERNS
+# =============================================================================
+movement_patterns:
+  push:
+    horizontal:
+      examples: ["Bench Press", "Push-ups", "Dumbbell Press"]
+      muscles: ["chest", "anterior_deltoid", "triceps"]
+
+    vertical:
+      examples: ["Overhead Press", "Dips", "Handstand Push-ups"]
+      muscles: ["shoulders", "triceps", "upper_chest"]
+
+  pull:
+    horizontal:
+      examples: ["Barbell Row", "Cable Row", "Dumbbell Row"]
+      muscles: ["lats", "rhomboids", "biceps"]
+
+    vertical:
+      examples: ["Pull-ups", "Lat Pulldown", "Chin-ups"]
+      muscles: ["lats", "biceps", "rear_delts"]
+
+  hinge:
+    examples: ["Deadlift", "Romanian Deadlift", "Good Mornings", "Kettlebell Swing"]
+    muscles: ["hamstrings", "glutes", "lower_back"]
+    key_cue: "push_hips_back"
+
+  squat:
+    examples: ["Back Squat", "Front Squat", "Goblet Squat", "Leg Press"]
+    muscles: ["quadriceps", "glutes", "hamstrings"]
+    key_cue: "sit_between_legs"
+
+  lunge:
+    examples: ["Walking Lunges", "Reverse Lunges", "Bulgarian Split Squat"]
+    muscles: ["quadriceps", "glutes", "hamstrings"]
+    benefits: ["single_leg_strength", "balance"]
+
+  carry:
+    examples: ["Farmer's Walk", "Suitcase Carry", "Overhead Carry"]
+    muscles: ["core", "grip", "traps", "full_body"]
+    benefits: ["core_stability", "grip_strength"]
+
+  rotation:
+    examples: ["Wood Chops", "Cable Rotation", "Russian Twist"]
+    muscles: ["obliques", "transverse_abdominis"]
+    benefits: ["rotational_power", "core_stability"]
+
+# =============================================================================
+# EXERCISE SELECTION RULES
+# =============================================================================
+selection_rules:
+  workout_structure:
+    order:
+      1: "compound_before_isolation"
+      2: "power_movements_first"
+      3: "large_muscles_before_small"
+      4: "weak_points_when_fresh"
+
+    balance:
+      push_pull_ratio: "1:1 per week"
+      vertical_horizontal_ratio: "even distribution"
+      bilateral_unilateral: "include both"
+
+  by_goal:
+    strength:
+      exercise_selection: "compound_focused"
+      set_range: [3, 6]
+      rep_range: [1, 6]
+      rest_seconds: [180, 300]
+
+    hypertrophy:
+      exercise_selection: "mix_compound_isolation"
+      set_range: [3, 5]
+      rep_range: [6, 12]
+      rest_seconds: [60, 120]
+
+    endurance:
+      exercise_selection: "higher_rep_variations"
+      set_range: [2, 4]
+      rep_range: [12, 20]
+      rest_seconds: [30, 60]
+
+    power:
+      exercise_selection: "explosive_movements"
+      set_range: [3, 5]
+      rep_range: [1, 5]
+      rest_seconds: [120, 180]
+
+  by_equipment_available:
+    minimal:
+      primary: ["bodyweight", "resistance_bands"]
+      exercises: ["Push-ups", "Pull-ups", "Squats", "Lunges", "Planks"]
+
+    home_gym:
+      primary: ["dumbbells", "kettlebells", "pull_up_bar"]
+      exercises: ["Dumbbell Press", "Goblet Squat", "KB Swings", "Pull-ups"]
+
+    full_gym:
+      primary: ["barbell", "machines", "cables", "full_dumbbell_rack"]
+      exercises: ["Full exercise library available"]
+
+  limitations:
+    injury_avoidance:
+      shoulder: ["avoid overhead pressing", "modify pushing angles"]
+      lower_back: ["avoid loaded flexion", "brace properly"]
+      knee: ["avoid deep flexion if painful", "strengthen VMO"]
+
+    equipment_substitution:
+      no_barbell:
+        squat: "Goblet Squat or Leg Press"
+        bench_press: "Dumbbell Bench Press"
+        deadlift: "Dumbbell RDL or Trap Bar"
+
+      no_pull_up_bar:
+        pull_ups: "Lat Pulldown or Banded Pull-aparts"

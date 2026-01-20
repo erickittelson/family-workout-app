@@ -1,0 +1,371 @@
+# Open Semantic Interchange Configuration
+# Master configuration for AI prompt generation
+# January 2026
+
+version: "2.0"
+last_updated: "2026-01-19"
+app_name: "Family Workout App"
+ai_provider: "openai"
+
+# =============================================================================
+# SCHEMA REGISTRY
+# =============================================================================
+schemas:
+  programming_rules:
+    file: "programming-rules.yaml"
+    description: "Evidence-based training principles, progressive overload, RPE/RIR, periodization"
+    inject_into: ["workout_generation", "coaching", "goal_setting"]
+    cache_ttl_seconds: 3600
+    priority: 1
+
+  training_goals:
+    file: "training-goals.yaml"
+    description: "Goal-specific frameworks for aesthetics, powerlifting, calisthenics, general fitness"
+    inject_into: ["workout_generation", "goal_setting", "milestone_generation"]
+    cache_ttl_seconds: 3600
+    priority: 2
+
+  sport_specific:
+    file: "sport-specific.yaml"
+    description: "Athletic performance protocols for sprinting, cheer, football, baseball, basketball, soccer"
+    inject_into: ["workout_generation", "goal_setting", "coaching"]
+    cache_ttl_seconds: 3600
+    priority: 3
+
+  workout_structures:
+    file: "workout-structures.yaml"
+    description: "AMRAP, EMOM, supersets, circuits, tabata templates"
+    inject_into: ["workout_generation"]
+    cache_ttl_seconds: 3600
+    priority: 4
+
+  coaching_modes:
+    file: "coaching-modes.yaml"
+    description: "7 coaching modes with personas and strategies"
+    inject_into: ["coaching", "chat"]
+    cache_ttl_seconds: 3600
+    priority: 5
+
+  milestones:
+    file: "milestones.yaml"
+    description: "Goal → milestone progression templates including sport-specific and powerlifting benchmarks"
+    inject_into: ["goal_setting", "milestone_generation"]
+    cache_ttl_seconds: 7200
+    priority: 6
+
+  recovery_windows:
+    file: "recovery-windows.yaml"
+    description: "Muscle group recovery times and modifiers"
+    inject_into: ["workout_generation", "coaching"]
+    cache_ttl_seconds: 3600
+    priority: 7
+
+  exercises_taxonomy:
+    file: "exercises-taxonomy.yaml"
+    description: "Exercise classification, muscle groups, equipment"
+    inject_into: ["workout_generation", "exercise_selection"]
+    cache_ttl_seconds: 7200
+    priority: 8
+
+# =============================================================================
+# MODEL CONFIGURATION (January 2026)
+# =============================================================================
+models:
+  primary:
+    id: "gpt-5.2"
+    provider: "openai"
+    context_window: 256000
+    output_limit: 32000
+    pricing:
+      input_per_1m: 1.75
+      output_per_1m: 14.00
+      cached_input_per_1m: 0.175
+    use_for:
+      - "workout_generation"
+      - "coaching"
+      - "analysis"
+
+  pro:
+    id: "gpt-5.2-pro"
+    provider: "openai"
+    context_window: 256000
+    output_limit: 64000
+    pricing:
+      input_per_1m: 5.00
+      output_per_1m: 40.00
+      cached_input_per_1m: 0.50
+    use_for:
+      - "complex_analysis"
+      - "injury_prevention"
+      - "multi_member_workouts"
+
+  fast:
+    id: "gpt-5.2-chat-latest"
+    provider: "openai"
+    context_window: 128000
+    output_limit: 16000
+    pricing:
+      input_per_1m: 0.50
+      output_per_1m: 2.00
+      cached_input_per_1m: 0.05
+    use_for:
+      - "chat"
+      - "quick_questions"
+      - "simple_lookups"
+
+# =============================================================================
+# TASK CONFIGURATION
+# =============================================================================
+tasks:
+  workout_generation:
+    model: "primary"
+    reasoning_level: "standard"
+    timeout_seconds: 90
+    cache_enabled: true
+    cache_ttl_seconds: 3600
+    schemas_required:
+      - "programming_rules"
+      - "training_goals"
+      - "sport_specific"
+      - "workout_structures"
+      - "exercises_taxonomy"
+      - "recovery_windows"
+    context_sources:
+      - "member_snapshot"
+      - "circle_equipment"
+      - "recent_workouts"
+    notes: "Full context for intelligent workout creation based on goals"
+
+  coaching_chat:
+    model: "fast"
+    reasoning_level: "none"
+    timeout_seconds: 30
+    cache_enabled: false
+    schemas_required:
+      - "coaching_modes"
+      - "programming_rules"
+      - "training_goals"
+    context_sources:
+      - "member_snapshot"
+      - "conversation_history"
+    notes: "Include training knowledge for informed coaching"
+
+  milestone_generation:
+    model: "primary"
+    reasoning_level: "standard"
+    timeout_seconds: 60
+    cache_enabled: true
+    cache_ttl_seconds: 86400
+    schemas_required:
+      - "milestones"
+      - "training_goals"
+      - "sport_specific"
+      - "programming_rules"
+    context_sources:
+      - "member_snapshot"
+      - "goal_details"
+    notes: "Use sport-specific and goal-specific templates for accurate milestones"
+
+  exercise_recommendations:
+    model: "fast"
+    reasoning_level: "quick"
+    timeout_seconds: 30
+    cache_enabled: true
+    cache_ttl_seconds: 1800
+    schemas_required:
+      - "exercises_taxonomy"
+      - "recovery_windows"
+      - "training_goals"
+    context_sources:
+      - "member_snapshot"
+      - "recent_exercises"
+    notes: "Consider training goals when recommending exercises"
+
+  complex_analysis:
+    model: "pro"
+    reasoning_level: "deep"
+    timeout_seconds: 180
+    cache_enabled: true
+    cache_ttl_seconds: 7200
+    schemas_required:
+      - "programming_rules"
+      - "training_goals"
+      - "sport_specific"
+      - "recovery_windows"
+      - "milestones"
+    context_sources:
+      - "member_full_context"
+      - "all_workout_history"
+    notes: "Full schema access for comprehensive analysis"
+
+  goal_setting:
+    model: "primary"
+    reasoning_level: "standard"
+    timeout_seconds: 60
+    cache_enabled: true
+    cache_ttl_seconds: 3600
+    schemas_required:
+      - "milestones"
+      - "training_goals"
+      - "sport_specific"
+      - "programming_rules"
+    context_sources:
+      - "member_snapshot"
+    notes: "Help users set SMART goals with appropriate benchmarks"
+
+  athletic_performance:
+    model: "primary"
+    reasoning_level: "standard"
+    timeout_seconds: 90
+    cache_enabled: true
+    cache_ttl_seconds: 3600
+    schemas_required:
+      - "sport_specific"
+      - "training_goals"
+      - "programming_rules"
+      - "exercises_taxonomy"
+      - "recovery_windows"
+    context_sources:
+      - "member_snapshot"
+      - "circle_equipment"
+      - "recent_workouts"
+    notes: "Specialized task for sport-specific training programs"
+
+# =============================================================================
+# CONTEXT SOURCES
+# =============================================================================
+context_sources:
+  member_snapshot:
+    source: "member_context_snapshot"
+    description: "Pre-computed member context from snapshot table"
+    latency_target_ms: 50
+    fields:
+      - "fitnessLevel"
+      - "activeLimitations"
+      - "activeGoals"
+      - "personalRecords"
+      - "muscleRecoveryStatus"
+      - "weeklyWorkoutAvg"
+      - "needsDeload"
+
+  member_full_context:
+    source: "getMemberContext()"
+    description: "Full live member context from source tables"
+    latency_target_ms: 500
+    use_when: "snapshot_stale_or_complex_analysis"
+
+  circle_equipment:
+    source: "circle_equipment"
+    description: "Circle's available equipment"
+    latency_target_ms: 50
+    cache_ttl_seconds: 300
+
+  recent_workouts:
+    source: "workout_sessions"
+    description: "Last 5 workout sessions"
+    latency_target_ms: 100
+    limit: 5
+
+  conversation_history:
+    source: "coach_messages"
+    description: "Recent conversation messages"
+    latency_target_ms: 100
+    limit: 20
+
+# =============================================================================
+# PROMPT TEMPLATES
+# =============================================================================
+prompt_templates:
+  system_base: |
+    You are an elite AI fitness coach with deep expertise in evidence-based exercise science,
+    programming methodology, and personalized training. Your knowledge includes:
+
+    - Progressive overload and periodization (linear, undulating, block)
+    - Goal-specific training: aesthetics/bodybuilding, powerlifting, calisthenics, athletic performance
+    - Sport-specific protocols: sprinting, cheerleading, football, baseball, basketball, soccer
+    - Volume landmarks (MEV, MAV, MRV) and recovery optimization
+    - RPE/RIR-based autoregulation
+    - Modern training science from NSCA, ACSM, and leading researchers
+
+    You are helping members of the "{circle_name}" fitness circle.
+
+    CRITICAL: Always design programs based on the member's stated goals and sport/activity focus.
+    Use the appropriate training methodology - don't apply bodybuilding principles to a sprinter,
+    or powerlifting principles to a cheerleader, unless specifically appropriate.
+
+    Current date: {current_date}
+    App version: 2.0 (January 2026)
+
+  member_intro: |
+    ## Member Profile: {member_name}
+    {member_context}
+
+  limitations_warning: |
+    ⚠️ CRITICAL - MEMBER LIMITATIONS (MUST ACCOMMODATE):
+    {limitations}
+    Never prescribe exercises that could aggravate these conditions.
+
+  equipment_section: |
+    ## Available Equipment
+    {equipment_list}
+    Prioritize exercises using this equipment.
+
+  goal_section: |
+    ## Active Goals
+    {goals}
+    Design workouts that progress toward these goals.
+
+# =============================================================================
+# VALIDATION RULES
+# =============================================================================
+validation:
+  workout_output:
+    required_fields:
+      - "name"
+      - "exercises"
+      - "estimatedDuration"
+    exercise_constraints:
+      min_exercises: 5
+      max_exercises: 15
+      superset_min_exercises: 2
+      circuit_min_exercises: 3
+    safety_checks:
+      - "no_exercises_for_injured_areas"
+      - "appropriate_intensity_for_fitness_level"
+      - "adequate_rest_periods"
+
+  coaching_output:
+    max_response_length: 2000
+    tone_requirements:
+      - "supportive"
+      - "knowledgeable"
+      - "personalized"
+    boundaries:
+      - "no_medical_diagnosis"
+      - "refer_to_professional_when_needed"
+
+# =============================================================================
+# FEATURE FLAGS
+# =============================================================================
+features:
+  use_snapshot_tables: true
+  enable_ai_caching: true
+  parallel_context_loading: true
+  stream_responses: true
+  track_token_usage: true
+  log_prompt_versions: true
+
+# =============================================================================
+# MONITORING
+# =============================================================================
+monitoring:
+  log_level: "info"
+  track_metrics:
+    - "response_time_ms"
+    - "token_usage"
+    - "cache_hit_rate"
+    - "error_rate"
+  alert_thresholds:
+    response_time_ms: 5000
+    error_rate_percent: 5
+    cache_hit_rate_min: 0.3

@@ -1,0 +1,122 @@
+# Skill Entity
+# Athletic skills like gymnastics, calisthenics
+
+entity: skill
+version: "1.0.0"
+description: "An athletic skill being learned or mastered"
+table: member_skills
+
+# Primary identifier
+primary_key: id
+foreign_keys:
+  - field: member_id
+    references: circle_members.id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier"
+
+  - name: name
+    type: string
+    description: "Skill name"
+    required: true
+    examples: ["back tuck", "muscle-up", "front lever", "handstand"]
+
+  - name: category
+    type: enum
+    values: ["gymnastics", "calisthenics", "sport", "other"]
+    description: "Type of skill"
+    required: true
+
+  - name: current_status
+    type: enum
+    values: ["learning", "achieved", "mastered"]
+    description: "Current proficiency level"
+    default: "learning"
+
+  - name: current_status_date
+    type: timestamp
+    description: "When current status was set"
+
+  - name: all_time_best_status
+    type: enum
+    values: ["learning", "achieved", "mastered"]
+    description: "Best status ever reached"
+    default: "learning"
+
+  - name: all_time_best_date
+    type: timestamp
+    description: "When best status was reached"
+
+  - name: notes
+    type: string
+    description: "Progress notes"
+
+# Status definitions
+status_definitions:
+  learning:
+    description: "Working toward the skill, not yet achieved"
+    criteria: "Cannot perform the skill independently"
+
+  achieved:
+    description: "Can perform the skill"
+    criteria: "Can complete 1+ reps with proper form"
+
+  mastered:
+    description: "Consistent, clean execution"
+    criteria: "Can perform multiple reps, variations, and combinations"
+
+# Skill progressions (common)
+progressions:
+  back_tuck:
+    prerequisites: ["backward roll", "back handspring prep"]
+    drills: ["tuck jumps", "back drops on trampoline", "spotted back tucks"]
+    next: ["back pike", "layout", "back full"]
+
+  muscle_up:
+    prerequisites: ["10 pull-ups", "10 chest-to-bar pull-ups", "deep dips"]
+    drills: ["high pulls", "transition work", "negative muscle-ups"]
+    next: ["strict muscle-up", "weighted muscle-up"]
+
+  front_lever:
+    prerequisites: ["10 pull-ups", "tuck front lever hold"]
+    drills: ["front lever raises", "advanced tuck holds", "one leg progressions"]
+    next: ["front lever pulls", "Victorian"]
+
+  handstand:
+    prerequisites: ["wall handstand 60s", "basic shoulder flexibility"]
+    drills: ["wall walks", "kick-ups", "pirouette bails"]
+    next: ["handstand walk", "press to handstand", "one arm handstand"]
+
+# Query examples
+examples:
+  - question: "What skills has the member achieved?"
+    sql: |
+      SELECT name, category, current_status, current_status_date
+      FROM member_skills
+      WHERE member_id = $1
+        AND current_status IN ('achieved', 'mastered')
+      ORDER BY current_status_date DESC
+
+  - question: "What skills is the member learning?"
+    sql: |
+      SELECT name, category, notes
+      FROM member_skills
+      WHERE member_id = $1 AND current_status = 'learning'
+
+  - question: "What gymnastics skills does the member have?"
+    sql: |
+      SELECT name, current_status, all_time_best_status
+      FROM member_skills
+      WHERE member_id = $1 AND category = 'gymnastics'
+
+# Synonyms
+synonyms:
+  skill: [move, trick, ability]
+  back_tuck: [backflip, back somersault, back sault]
+  muscle_up: [muscleup, bar muscle up, BMU]
+  front_lever: [FL]
+  handstand: [HS, hand stand]
+  mastered: [consistent, solid, clean]

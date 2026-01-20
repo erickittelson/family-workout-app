@@ -1,0 +1,159 @@
+# Workout Session Entity
+# A logged training session
+
+entity: workout_session
+version: "1.0.0"
+description: "A logged training session with exercises and sets"
+table: workout_sessions
+
+# Primary identifier
+primary_key: id
+foreign_keys:
+  - field: member_id
+    references: circle_members.id
+  - field: plan_id
+    references: workout_plans.id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier"
+
+  - name: name
+    type: string
+    description: "Name of the workout"
+    required: true
+
+  - name: date
+    type: timestamp
+    description: "When the workout occurred"
+    required: true
+
+  - name: start_time
+    type: timestamp
+    description: "When the session started"
+
+  - name: end_time
+    type: timestamp
+    description: "When the session ended"
+
+  - name: status
+    type: enum
+    values: ["planned", "in_progress", "completed"]
+    description: "Current state of the session"
+    default: "planned"
+
+  - name: notes
+    type: string
+    description: "User notes about the session"
+
+  - name: rating
+    type: integer
+    min: 1
+    max: 5
+    description: "Self-rated workout quality"
+
+  - name: ai_feedback
+    type: string
+    description: "AI-generated feedback on the session"
+
+# Computed properties
+computed:
+  duration_minutes:
+    formula: "EXTRACT(EPOCH FROM (end_time - start_time)) / 60"
+    description: "Duration in minutes"
+
+  total_sets:
+    formula: |
+      SELECT COUNT(*)
+      FROM workout_session_exercises wse
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE wse.session_id = $1
+    description: "Total number of sets"
+
+  total_volume:
+    formula: |
+      SELECT SUM(es.actual_reps * COALESCE(es.actual_weight, 1))
+      FROM workout_session_exercises wse
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE wse.session_id = $1 AND es.completed = true
+    description: "Total volume (reps * weight)"
+
+  muscles_worked:
+    formula: |
+      SELECT DISTINCT unnest(e.muscle_groups)
+      FROM workout_session_exercises wse
+      JOIN exercises e ON wse.exercise_id = e.id
+      WHERE wse.session_id = $1
+    description: "All muscle groups worked"
+
+# Relations
+relations:
+  exercises:
+    table: workout_session_exercises
+    type: one_to_many
+    description: "Exercises performed in this session"
+    nested:
+      sets:
+        table: exercise_sets
+        type: one_to_many
+        description: "Individual sets for each exercise"
+
+  member:
+    table: circle_members
+    type: many_to_one
+    description: "Member who performed the session"
+
+  plan:
+    table: workout_plans
+    type: many_to_one
+    description: "Original plan this session was based on"
+
+# Query examples
+examples:
+  - question: "How many sessions last week?"
+    sql: |
+      SELECT COUNT(*)
+      FROM workout_sessions
+      WHERE member_id = $1
+        AND status = 'completed'
+        AND date >= NOW() - INTERVAL '7 days'
+
+  - question: "What did I do in my last workout?"
+    sql: |
+      SELECT ws.name, ws.date,
+        json_agg(
+          json_build_object(
+            'exercise', e.name,
+            'sets', (
+              SELECT json_agg(json_build_object(
+                'reps', es.actual_reps,
+                'weight', es.actual_weight
+              ) ORDER BY es.set_number)
+              FROM exercise_sets es
+              WHERE es.session_exercise_id = wse.id
+            )
+          ) ORDER BY wse.order
+        ) as exercises
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercises e ON wse.exercise_id = e.id
+      WHERE ws.member_id = $1 AND ws.status = 'completed'
+      GROUP BY ws.id
+      ORDER BY ws.date DESC
+      LIMIT 1
+
+  - question: "What's my average workout duration?"
+    sql: |
+      SELECT AVG(EXTRACT(EPOCH FROM (end_time - start_time)) / 60) as avg_minutes
+      FROM workout_sessions
+      WHERE member_id = $1
+        AND status = 'completed'
+        AND end_time IS NOT NULL
+
+# Synonyms
+synonyms:
+  workout_session: [workout, session, training, lift, gym session]
+  completed: [finished, done, logged]
+  in_progress: [active, ongoing, current]

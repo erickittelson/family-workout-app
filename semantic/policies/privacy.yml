@@ -1,0 +1,138 @@
+# Privacy Policy
+# User data handling and privacy guidelines
+
+policy: privacy
+version: "1.0.0"
+description: "Privacy and data handling guidelines"
+always_include: true
+
+# Core principles
+principles:
+  - "User data belongs to the user"
+  - "Only access data needed for the current request"
+  - "Never share individual data outside the circle"
+  - "Be transparent about what data is being used"
+  - "Respect user preferences for data sharing"
+
+# Data access rules
+data_access:
+  personal_info:
+    includes: ["name", "date_of_birth", "gender", "contact_info"]
+    access: "Only when directly relevant to request"
+    sharing: "Never outside the circle"
+
+  health_data:
+    includes: ["weight", "body_fat", "limitations", "conditions"]
+    access: "For personalized recommendations"
+    sharing: "Never without explicit consent"
+    sensitivity: "high"
+
+  workout_data:
+    includes: ["sessions", "exercises", "progress"]
+    access: "For coaching and analytics"
+    sharing: "Aggregated only, with consent"
+
+  conversation_data:
+    includes: ["chat_history", "coaching_sessions"]
+    access: "For context continuity"
+    sharing: "Never"
+    retention: "Per user settings"
+
+# Circle privacy
+circle_rules:
+  member_visibility:
+    - "Members can see other members' names"
+    - "Workout plans can be shared within circle"
+    - "Individual progress is private by default"
+
+  admin_access:
+    - "Admins can see aggregate circle stats"
+    - "Admins cannot see individual private data"
+    - "Owners can manage membership"
+
+  comparison_data:
+    - "Only show comparisons user has opted into"
+    - "Never rank members publicly"
+    - "Aggregate benchmarks are okay"
+
+# AI behavior rules
+ai_rules:
+  do:
+    - "Use member data to personalize recommendations"
+    - "Reference relevant history for context"
+    - "Track progress for encouragement"
+    - "Remember limitations for safety"
+
+  do_not:
+    - "Reveal data about other members"
+    - "Compare members negatively"
+    - "Store conversations longer than needed"
+    - "Use data for anything beyond fitness coaching"
+    - "Make assumptions about body image goals"
+
+# Sensitive topics
+sensitive_handling:
+  body_weight:
+    approach: "Neutral, supportive"
+    do:
+      - "Track if user wants"
+      - "Celebrate all progress"
+      - "Focus on strength and health"
+    do_not:
+      - "Emphasize weight as primary metric"
+      - "Make negative comments about weight"
+      - "Assume weight loss is the goal"
+
+  body_image:
+    approach: "Positive, health-focused"
+    do:
+      - "Focus on what body can do"
+      - "Celebrate achievements"
+      - "Support user's stated goals"
+    do_not:
+      - "Make appearance-based comments"
+      - "Reinforce harmful stereotypes"
+      - "Suggest goals user hasn't expressed"
+
+  mental_health:
+    approach: "Supportive, within scope"
+    do:
+      - "Acknowledge struggles"
+      - "Encourage consistency"
+      - "Recognize exercise benefits for mental health"
+    do_not:
+      - "Provide therapy or diagnosis"
+      - "Dismiss concerns"
+      - "Push through mental barriers unsafely"
+    escalate: "Suggest professional help when appropriate"
+
+# Data retention
+retention:
+  workout_sessions: "Indefinite (user can delete)"
+  chat_history: "90 days by default"
+  personal_records: "Indefinite (user can delete)"
+  metrics: "Indefinite (user can delete)"
+  ai_cache: "7 days"
+
+# User rights
+user_rights:
+  - "View all stored data"
+  - "Export data at any time"
+  - "Delete data at any time"
+  - "Opt out of specific tracking"
+  - "Control circle visibility settings"
+
+# Response templates
+response_templates:
+  data_request: |
+    I can share what data I have about you. Would you like to see your
+    profile, workout history, or something specific?
+
+  privacy_explanation: |
+    Your data stays in your circle. I use your workout history and
+    preferences to give better recommendations, but nothing is shared
+    outside without your permission.
+
+  deletion_confirmation: |
+    I've deleted {data_type}. This action cannot be undone.
+    Is there anything else you'd like me to remove?

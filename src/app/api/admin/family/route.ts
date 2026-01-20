@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth, hashPasskey } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { families } from "@/lib/db/schema";
+import { circles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
@@ -11,24 +11,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const family = await db.query.families.findFirst({
-      where: eq(families.id, session.familyId),
+    const circle = await db.query.circles.findFirst({
+      where: eq(circles.id, session.circleId),
       columns: {
         id: true,
         name: true,
+        description: true,
         createdAt: true,
       },
     });
 
-    if (!family) {
-      return NextResponse.json({ error: "Family not found" }, { status: 404 });
+    if (!circle) {
+      return NextResponse.json({ error: "Circle not found" }, { status: 404 });
     }
 
-    return NextResponse.json(family);
+    return NextResponse.json(circle);
   } catch (error) {
-    console.error("Error fetching family:", error);
+    console.error("Error fetching family info:", error);
     return NextResponse.json(
-      { error: "Failed to fetch family" },
+      { error: "Failed to fetch family info" },
       { status: 500 }
     );
   }
@@ -42,36 +43,43 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { name, passkey } = body;
+    const { name, description, passkey } = body;
 
-    const updates: Record<string, any> = {
+    const updates: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
-    if (name) {
-      updates.name = name;
+    if (name !== undefined) {
+      if (!name || name.trim().length === 0) {
+        return NextResponse.json(
+          { error: "Family name cannot be empty" },
+          { status: 400 }
+        );
+      }
+      updates.name = name.trim();
     }
 
-    if (passkey) {
+    if (description !== undefined) {
+      updates.description = description;
+    }
+
+    if (passkey !== undefined && passkey.length > 0) {
       if (passkey.length < 4) {
         return NextResponse.json(
           { error: "Passkey must be at least 4 characters" },
           { status: 400 }
         );
       }
-      updates.passkey = passkey; // In production, hash this
+      updates.passkey = await hashPasskey(passkey);
     }
 
-    await db
-      .update(families)
-      .set(updates)
-      .where(eq(families.id, session.familyId));
+    await db.update(circles).set(updates).where(eq(circles.id, session.circleId));
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error updating family:", error);
+    console.error("Error updating family info:", error);
     return NextResponse.json(
-      { error: "Failed to update family" },
+      { error: "Failed to update family info" },
       { status: 500 }
     );
   }

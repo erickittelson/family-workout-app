@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { familyMembers, memberMetrics, memberLimitations, goals, personalRecords } from "@/lib/db/schema";
+import { circleMembers, memberMetrics, memberLimitations, goals, personalRecords, memberSkills } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export async function GET(
@@ -16,10 +16,10 @@ export async function GET(
 
     const { id } = await params;
 
-    const member = await db.query.familyMembers.findFirst({
+    const member = await db.query.circleMembers.findFirst({
       where: and(
-        eq(familyMembers.id, id),
-        eq(familyMembers.familyId, session.familyId)
+        eq(circleMembers.id, id),
+        eq(circleMembers.circleId, session.circleId)
       ),
       with: {
         metrics: {
@@ -35,6 +35,9 @@ export async function GET(
           },
           orderBy: (pr, { desc }) => [desc(pr.date)],
         },
+        skills: {
+          orderBy: (skills, { desc }) => [desc(skills.createdAt)],
+        },
       },
     });
 
@@ -45,13 +48,15 @@ export async function GET(
     return NextResponse.json({
       id: member.id,
       name: member.name,
-      avatar: member.avatar,
+      profilePicture: member.profilePicture,
       dateOfBirth: member.dateOfBirth?.toISOString().split("T")[0],
       gender: member.gender,
+      role: member.role,
       metrics: member.metrics,
       limitations: member.limitations,
       goals: member.goals,
       personalRecords: member.personalRecords,
+      skills: member.skills,
     });
   } catch (error) {
     console.error("Error fetching member:", error);
@@ -74,13 +79,13 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, dateOfBirth, gender, metrics } = body;
+    const { name, dateOfBirth, gender, metrics, profilePicture } = body;
 
-    // Verify member belongs to this family
-    const existingMember = await db.query.familyMembers.findFirst({
+    // Verify member belongs to this circle
+    const existingMember = await db.query.circleMembers.findFirst({
       where: and(
-        eq(familyMembers.id, id),
-        eq(familyMembers.familyId, session.familyId)
+        eq(circleMembers.id, id),
+        eq(circleMembers.circleId, session.circleId)
       ),
     });
 
@@ -90,14 +95,15 @@ export async function PUT(
 
     // Update member
     await db
-      .update(familyMembers)
+      .update(circleMembers)
       .set({
         name,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         gender,
+        profilePicture,
         updatedAt: new Date(),
       })
-      .where(eq(familyMembers.id, id));
+      .where(eq(circleMembers.id, id));
 
     // Add new metrics entry if provided
     if (metrics && (metrics.weight || metrics.height || metrics.bodyFatPercentage || metrics.fitnessLevel)) {
@@ -133,11 +139,11 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Verify member belongs to this family
-    const existingMember = await db.query.familyMembers.findFirst({
+    // Verify member belongs to this circle
+    const existingMember = await db.query.circleMembers.findFirst({
       where: and(
-        eq(familyMembers.id, id),
-        eq(familyMembers.familyId, session.familyId)
+        eq(circleMembers.id, id),
+        eq(circleMembers.circleId, session.circleId)
       ),
     });
 
@@ -146,7 +152,7 @@ export async function DELETE(
     }
 
     // Delete member (cascade will handle related records)
-    await db.delete(familyMembers).where(eq(familyMembers.id, id));
+    await db.delete(circleMembers).where(eq(circleMembers.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

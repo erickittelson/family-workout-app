@@ -1,0 +1,164 @@
+# Goals Domain
+# Goal setting, milestone tracking, and achievement management
+
+domain: goals
+version: "1.0.0"
+description: "Goal setting, milestones, and achievement tracking"
+
+# Goal categories
+categories:
+  strength:
+    description: "Strength-based goals (PRs, 1RMs)"
+    examples: ["Bench 225 lbs", "Deadlift 2x bodyweight"]
+    metrics: [weight, reps, rep_max]
+
+  cardio:
+    description: "Cardiovascular fitness goals"
+    examples: ["Run a 5K", "Sub-7 minute mile"]
+    metrics: [distance, time, pace]
+
+  skill:
+    description: "Athletic skill acquisition"
+    examples: ["Get first pull-up", "Learn muscle-up", "Back tuck"]
+    metrics: [achieved, proficiency_level]
+
+  weight:
+    description: "Body weight goals"
+    examples: ["Lose 20 lbs", "Gain 10 lbs muscle"]
+    metrics: [weight, body_fat_percentage]
+
+  flexibility:
+    description: "Mobility and flexibility goals"
+    examples: ["Touch toes", "Full splits"]
+    metrics: [range_of_motion]
+
+  endurance:
+    description: "Stamina and work capacity"
+    examples: ["50 push-ups", "10 minute plank"]
+    metrics: [reps, duration]
+
+# Goal statuses
+statuses:
+  active: "Currently pursuing"
+  completed: "Successfully achieved"
+  abandoned: "No longer pursuing"
+
+# User intents
+intents:
+  set_goal:
+    description: "User wants to set a new goal"
+    examples:
+      - "I want to bench 225"
+      - "My goal is to lose 20 pounds"
+      - "I want to do a muscle-up by summer"
+    required_data: [goal_type, target]
+    optional_data: [deadline, milestones]
+
+  check_progress:
+    description: "User checking goal progress"
+    examples:
+      - "How am I doing on my goals?"
+      - "Progress update"
+      - "Am I on track?"
+
+  update_goal:
+    description: "Modify an existing goal"
+    examples:
+      - "Change my target to 250"
+      - "Extend my deadline"
+      - "I achieved my goal!"
+
+  get_recommendations:
+    description: "Get goal suggestions"
+    examples:
+      - "What goals should I set?"
+      - "What's realistic for me?"
+
+# Milestone generation rules
+milestone_rules:
+  strength:
+    description: "Break strength goals into progressive milestones"
+    formula: |
+      - If gap > 50 lbs: 5 milestones at 10-lb increments
+      - If gap > 20 lbs: 4 milestones at 5-lb increments
+      - If gap <= 20 lbs: 3 milestones at even splits
+    example:
+      goal: "Bench 225 lbs"
+      current: 185
+      milestones: [195, 205, 215, 225]
+
+  weight_loss:
+    description: "Safe weight loss milestones"
+    formula: |
+      - Target 1-2 lbs per week loss
+      - Milestone every 5 lbs
+      - Include weekly habit milestones
+    constraints:
+      - "Never suggest >2 lbs/week loss"
+      - "Include maintenance checkpoints"
+
+  skill:
+    description: "Skill progression milestones"
+    formula: |
+      - Identify prerequisite skills
+      - Break into progressions
+      - Include drill milestones
+
+# Query patterns
+query_patterns:
+  active_goals:
+    description: "Get member's active goals with progress"
+    sql: |
+      SELECT
+        g.*,
+        COALESCE(
+          (g.current_value / NULLIF(g.target_value, 0)) * 100,
+          0
+        ) as progress_percent,
+        json_agg(
+          json_build_object(
+            'id', m.id,
+            'title', m.title,
+            'status', m.status,
+            'target_value', m.target_value,
+            'target_date', m.target_date
+          ) ORDER BY m.order
+        ) FILTER (WHERE m.id IS NOT NULL) as milestones
+      FROM goals g
+      LEFT JOIN milestones m ON g.id = m.goal_id
+      WHERE g.member_id = $1
+        AND g.status = 'active'
+      GROUP BY g.id
+      ORDER BY g.created_at DESC
+
+  goal_with_progress:
+    description: "Get goal with related PRs and session data"
+    sql: |
+      SELECT
+        g.*,
+        (
+          SELECT json_agg(pr.* ORDER BY pr.date DESC)
+          FROM personal_records pr
+          JOIN exercises e ON pr.exercise_id = e.id
+          WHERE pr.member_id = g.member_id
+            AND e.name ILIKE '%' || g.title || '%'
+            AND pr.date >= g.created_at
+        ) as related_prs
+      FROM goals g
+      WHERE g.id = $1
+
+# Goal completion detection
+completion_triggers:
+  strength:
+    check: "New PR >= target_value for exercise"
+    action: "Mark goal complete, celebrate, suggest next goal"
+
+  skill:
+    check: "Skill status changed to 'achieved' or 'mastered'"
+    action: "Mark goal complete, suggest related progression"
+
+# Feature intro
+feature_intro: |
+  Set goals and I'll break them into achievable milestones. I'll track
+  your progress automatically from your workouts and let you know when
+  you hit them - even if you forget to check.

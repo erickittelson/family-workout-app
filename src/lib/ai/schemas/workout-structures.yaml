@@ -1,0 +1,368 @@
+# Workout Structures - Templates for Different Training Modalities
+# Defines structure types, timing models, and programming guidelines
+
+version: "1.0"
+last_updated: "2025-01-19"
+
+# =============================================================================
+# STRUCTURE TYPES
+# =============================================================================
+structures:
+  standard:
+    name: "Standard Sets"
+    description: "Traditional set/rep scheme with rest between sets"
+    timing_model:
+      set_duration_seconds: [30, 60]  # range based on reps
+      rest_between_sets: "per rest_preference"
+    example:
+      exercises: 1
+      sets: [3, 5]
+      reps: [6, 12]
+      rest: [60, 120]
+    when_to_use:
+      - "Strength focus"
+      - "Learning new movements"
+      - "Heavy compound lifts"
+      - "Beginner programming"
+    schema_fields:
+      supersetGroup: null
+      circuitGroup: null
+      timeSeconds: null
+
+  superset:
+    name: "Superset"
+    description: "Two exercises performed back-to-back with rest after the pair"
+    min_exercises: 2
+    max_exercises: 2
+    timing_model:
+      transition_seconds: 10
+      rest_after_pair: [60, 90]
+      time_savings_percent: 30
+    pairing_rules:
+      antagonist:
+        description: "Opposing muscle groups"
+        examples:
+          - ["Bench Press", "Barbell Row"]
+          - ["Bicep Curl", "Tricep Extension"]
+          - ["Leg Curl", "Leg Extension"]
+          - ["Push-ups", "Pull-ups"]
+        benefit: "One muscle rests while other works"
+      same_muscle:
+        description: "Pre-exhaust or compound + isolation"
+        examples:
+          - ["Leg Extension", "Squats"]  # pre-exhaust
+          - ["Bench Press", "Dumbbell Flyes"]  # compound + isolation
+        benefit: "Increased time under tension"
+      upper_lower:
+        description: "Non-competing muscle groups"
+        examples:
+          - ["Overhead Press", "Lunges"]
+          - ["Pull-ups", "Calf Raises"]
+        benefit: "Full body efficiency"
+    when_to_use:
+      - "Time-efficient workouts"
+      - "Hypertrophy focus"
+      - "Pump/metabolic stress"
+    schema_fields:
+      supersetGroup: "integer (same number for paired exercises)"
+      circuitGroup: null
+      restSeconds: 0  # between exercises in pair
+
+  triset:
+    name: "Tri-Set"
+    description: "Three exercises performed consecutively"
+    min_exercises: 3
+    max_exercises: 3
+    timing_model:
+      transition_seconds: 10
+      rest_after_trio: [90, 120]
+      time_savings_percent: 40
+    when_to_use:
+      - "High volume hypertrophy"
+      - "Time-crunched sessions"
+      - "Same muscle group burnout"
+    schema_fields:
+      supersetGroup: "integer (same number for all 3)"
+
+  circuit:
+    name: "Circuit Training"
+    description: "3+ exercises performed in sequence as rounds"
+    min_exercises: 3
+    max_exercises: 8
+    timing_model:
+      transition_seconds: 15
+      rest_between_rounds: [60, 120]
+      rest_between_exercises: [0, 15]
+    programming_notes:
+      - "Alternate upper/lower to manage fatigue"
+      - "Keep weights moderate (60-70% 1RM max)"
+      - "Focus on movement quality over speed"
+    when_to_use:
+      - "Conditioning focus"
+      - "Fat loss programming"
+      - "Full body sessions"
+      - "Limited time"
+    schema_fields:
+      circuitGroup: "integer (same number for all circuit exercises)"
+      structureType: "circuit"
+
+  amrap:
+    name: "AMRAP (As Many Reps/Rounds As Possible)"
+    description: "Complete as many rounds as possible in set time"
+    timing_model:
+      common_durations_minutes: [5, 8, 10, 12, 15, 20]
+      no_prescribed_rest: true
+      self_paced: true
+    programming_notes:
+      - "Choose 3-5 exercises"
+      - "Use moderate loads (50-60% 1RM)"
+      - "Include variety: push, pull, squat, hinge"
+      - "Rep ranges should allow continuous movement"
+    example:
+      duration_minutes: 10
+      exercises:
+        - name: "Pull-ups"
+          reps: 5
+        - name: "Push-ups"
+          reps: 10
+        - name: "Air Squats"
+          reps: 15
+      scoring: "Total rounds + extra reps"
+    when_to_use:
+      - "Conditioning"
+      - "Competitive/gamified workout"
+      - "Work capacity building"
+    schema_fields:
+      structureType: "amrap"
+      timeSeconds: "total duration in seconds"
+      reps: "reps per round"
+
+  emom:
+    name: "EMOM (Every Minute On the Minute)"
+    description: "Perform prescribed work at the start of each minute"
+    timing_model:
+      round_duration: 60  # seconds
+      work_time_target: [30, 45]  # complete work within this
+      rest_time: "remainder of minute"
+    variations:
+      single_exercise:
+        description: "Same exercise every minute"
+        example: "10 Deadlifts EMOM x 10"
+      alternating:
+        description: "Different exercise each minute"
+        example:
+          odd_minutes: "10 KB Swings"
+          even_minutes: "10 Burpees"
+      multi_exercise:
+        description: "Multiple exercises each minute"
+        example: "5 Pull-ups + 10 Push-ups EMOM x 12"
+    programming_notes:
+      - "Work should take 30-45 seconds"
+      - "If finishing with <15s rest, reduce reps"
+      - "Great for skill practice with built-in rest"
+      - "Good for pacing heavy lifts"
+    when_to_use:
+      - "Strength with conditioning"
+      - "Skill practice"
+      - "Structured interval work"
+    schema_fields:
+      structureType: "emom"
+      timeSeconds: "total duration (rounds × 60)"
+      reps: "reps per minute"
+
+  tabata:
+    name: "Tabata"
+    description: "20 seconds work, 10 seconds rest, 8 rounds"
+    timing_model:
+      work_seconds: 20
+      rest_seconds: 10
+      rounds: 8
+      total_time: 240  # 4 minutes
+    programming_notes:
+      - "Maximum intensity during work"
+      - "Choose exercises allowing all-out effort"
+      - "Can stack multiple Tabatas with 1-2 min rest between"
+    suitable_exercises:
+      - "Air Squats"
+      - "Burpees"
+      - "Mountain Climbers"
+      - "Assault Bike"
+      - "Rowing"
+      - "Jump Rope"
+      - "Kettlebell Swings"
+    unsuitable_exercises:
+      - "Heavy barbell lifts"
+      - "Complex movements"
+      - "Skill-dependent exercises"
+    when_to_use:
+      - "Finisher after strength work"
+      - "Quick conditioning"
+      - "HIIT training"
+    schema_fields:
+      structureType: "tabata"
+      workSeconds: 20
+      restSecondsInterval: 10
+
+  interval:
+    name: "Interval Training"
+    description: "Prescribed work:rest ratios"
+    timing_model:
+      common_ratios:
+        - ratio: "1:1"
+          example: "30s work : 30s rest"
+          intensity: "high"
+        - ratio: "1:2"
+          example: "20s work : 40s rest"
+          intensity: "maximum"
+        - ratio: "2:1"
+          example: "40s work : 20s rest"
+          intensity: "moderate"
+        - ratio: "1:3"
+          example: "15s work : 45s rest"
+          intensity: "sprint/power"
+    programming_notes:
+      - "Match ratio to energy system goal"
+      - "1:3+ for power/speed development"
+      - "1:1 for conditioning"
+      - "2:1+ for endurance"
+    when_to_use:
+      - "Cardio conditioning"
+      - "Sprint training"
+      - "Sport-specific preparation"
+    schema_fields:
+      structureType: "interval"
+      workSeconds: "work interval duration"
+      restSecondsInterval: "rest interval duration"
+
+# =============================================================================
+# WORKOUT TEMPLATES
+# =============================================================================
+templates:
+  strength_focused:
+    name: "Strength Block"
+    description: "Heavy compound lifts with full rest"
+    structure: "standard"
+    intensity_zone: "strength"
+    typical_flow:
+      - phase: "warmup"
+        duration: 5
+      - phase: "main_lifts"
+        exercises: [2, 3]
+        sets: [4, 5]
+        reps: [3, 6]
+        rest: [180, 300]
+      - phase: "accessory"
+        exercises: [2, 3]
+        sets: [3, 4]
+        reps: [8, 12]
+        rest: [90, 120]
+      - phase: "cooldown"
+        duration: 5
+
+  hypertrophy_supersets:
+    name: "Hypertrophy with Supersets"
+    description: "Volume-focused with time efficiency"
+    structure: "mixed"
+    typical_flow:
+      - phase: "warmup"
+        duration: 5
+      - phase: "main_superset_a"
+        structure: "superset"
+        exercises: 2
+        sets: 4
+        reps: [8, 12]
+      - phase: "main_superset_b"
+        structure: "superset"
+        exercises: 2
+        sets: 4
+        reps: [10, 15]
+      - phase: "finisher"
+        structure: "triset"
+        exercises: 3
+        sets: 3
+        reps: [12, 15]
+      - phase: "cooldown"
+        duration: 5
+
+  conditioning_circuit:
+    name: "Conditioning Circuit"
+    description: "Full body metabolic conditioning"
+    structure: "circuit"
+    typical_flow:
+      - phase: "warmup"
+        duration: 5
+      - phase: "circuit_block"
+        structure: "circuit"
+        exercises: [4, 6]
+        rounds: [3, 5]
+        rest_between_rounds: 90
+      - phase: "cooldown"
+        duration: 5
+
+  amrap_finisher:
+    name: "Strength + AMRAP Finisher"
+    description: "Strength work followed by conditioning"
+    structure: "mixed"
+    typical_flow:
+      - phase: "warmup"
+        duration: 5
+      - phase: "strength"
+        structure: "standard"
+        exercises: [3, 4]
+        sets: 4
+        reps: [5, 8]
+      - phase: "amrap"
+        structure: "amrap"
+        duration_minutes: [8, 12]
+        exercises: [3, 4]
+      - phase: "cooldown"
+        duration: 5
+
+  emom_skill:
+    name: "EMOM Skill Practice"
+    description: "Practice skill movements with built-in rest"
+    structure: "emom"
+    typical_flow:
+      - phase: "warmup"
+        duration: 5
+      - phase: "emom_block"
+        structure: "emom"
+        duration_minutes: [10, 20]
+        exercises: [1, 3]
+      - phase: "accessory"
+        structure: "standard"
+        exercises: [2, 3]
+        sets: 3
+      - phase: "cooldown"
+        duration: 5
+
+# =============================================================================
+# MULTI-PERSON ADAPTATIONS
+# =============================================================================
+multi_person:
+  equipment_sharing:
+    description: "How to handle limited equipment with multiple people"
+    strategies:
+      alternating:
+        description: "One works while others rest"
+        benefit: "Natural rest periods, no waiting"
+        example: "3 people, 90s work each = 3 min rest for each"
+      station_rotation:
+        description: "Circuit through different equipment"
+        benefit: "Everyone working simultaneously"
+        requirement: "Different equipment per exercise"
+      wave_loading:
+        description: "Different weights on same bar"
+        benefit: "Efficient warmup to working sets"
+        example: "Person A: 135, Person B: 185, Person C: 225"
+
+  timing_considerations:
+    rule: "Account for transitions between people"
+    transition_time_seconds: 15
+    rest_adjustment: "Can reduce prescribed rest when alternating"
+
+  group_motivation:
+    suggestions:
+      - "Include competitive elements (AMRAPs, timed sets)"
+      - "Partner exercises (med ball passes, resistance band work)"
+      - "Synchronized movements for team building"

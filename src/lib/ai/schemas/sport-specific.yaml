@@ -1,0 +1,972 @@
+# Sport-Specific Training Protocols
+# Evidence-based athletic performance training
+# References: NSCA, IYCA, EXOS, Triphasic Training, Charlie Francis
+
+version: "2.0"
+last_updated: "2026-01-20"
+
+# =============================================================================
+# ATHLETIC PERFORMANCE FOUNDATIONS
+# =============================================================================
+athletic_foundations:
+  description: "Core principles that apply to all sports"
+
+  movement_quality:
+    priority: "Always establish movement quality before adding load or speed"
+    assessment_areas:
+      - "Squat depth and mechanics"
+      - "Hip hinge pattern"
+      - "Lunge/single-leg stability"
+      - "Push/pull balance"
+      - "Core stability"
+      - "Overhead mobility"
+
+  force_velocity_curve:
+    description: "Training across the entire force-velocity spectrum"
+    zones:
+      max_strength:
+        description: "High force, low velocity"
+        examples: ["Heavy squats", "Deadlifts", "Bench press"]
+        load: "85-100% 1RM"
+        benefit: "Foundation for power development"
+
+      strength_speed:
+        description: "High force, moderate velocity"
+        examples: ["Olympic lifts", "Loaded jumps", "Heavy med ball throws"]
+        load: "70-85% 1RM or equivalent"
+        benefit: "Transfer strength to speed"
+
+      power:
+        description: "Balanced force and velocity"
+        examples: ["Jump squats", "Power cleans", "Plyometrics"]
+        load: "30-70% 1RM"
+        benefit: "Maximum power output"
+
+      speed_strength:
+        description: "Moderate force, high velocity"
+        examples: ["Light med ball throws", "Assisted sprints", "Band jumps"]
+        load: "10-30% 1RM"
+        benefit: "Develop rate of force development"
+
+      max_velocity:
+        description: "Low force, maximum velocity"
+        examples: ["Sprints", "Unloaded jumps", "Reactive plyos"]
+        load: "Bodyweight"
+        benefit: "Sport-specific speed expression"
+
+  energy_systems:
+    phosphocreatine:
+      duration: "0-10 seconds"
+      recovery: "Full recovery (2-5 min)"
+      sports: ["Sprinting", "Jumping", "Throwing", "Power sports"]
+      training: "Short max efforts with full rest"
+
+    glycolytic:
+      duration: "10 seconds - 2 minutes"
+      recovery: "Work:rest 1:3 to 1:5"
+      sports: ["Basketball", "Soccer", "Hockey", "Wrestling"]
+      training: "Repeat efforts with incomplete rest"
+
+    oxidative:
+      duration: ">2 minutes"
+      recovery: "Active recovery between intervals"
+      sports: ["Distance running", "Cycling", "Swimming"]
+      training: "Sustained efforts, tempo work"
+
+# =============================================================================
+# SPRINTING / TRACK & FIELD
+# =============================================================================
+sprinting:
+  name: "Sprinting & Track Events"
+  description: "Maximum velocity and acceleration development"
+
+  sprint_phases:
+    acceleration:
+      distance: "0-30m"
+      body_position: "45-degree forward lean, rising gradually"
+      key_cues:
+        - "Powerful arm drive"
+        - "Push the ground away"
+        - "Triple extension (ankle, knee, hip)"
+        - "Patient rise to upright"
+      training:
+        exercises:
+          - "10-30m sprints"
+          - "Sled sprints (10-20% BW)"
+          - "Hill sprints"
+          - "Wall drills"
+        sets: [4, 8]
+        rest: "Full recovery (2-3 min per 10m)"
+
+    max_velocity:
+      distance: "30-60m"
+      body_position: "Upright, slight forward lean"
+      key_cues:
+        - "High knee recovery"
+        - "Strike under center of mass"
+        - "Relaxed shoulders and face"
+        - "Quick ground contact"
+      training:
+        exercises:
+          - "Fly sprints (20m build + 20m fly)"
+          - "Wicket runs (proper stride length)"
+          - "In-and-outs"
+          - "Sprint-float-sprint"
+        sets: [4, 6]
+        rest: "Full recovery (4-6 min)"
+
+    speed_endurance:
+      distance: "60m+"
+      key_cues:
+        - "Maintain mechanics under fatigue"
+        - "Relaxation"
+      training:
+        exercises:
+          - "Extensive tempo (16x100m at 70%)"
+          - "Intensive tempo (6x150m at 85%)"
+          - "Special endurance (3x200m at 95%)"
+        recovery: "Based on event demands"
+
+  strength_training:
+    exercises:
+      primary:
+        - name: "Back Squat"
+          purpose: "General leg strength"
+          target: "2x bodyweight"
+        - name: "Trap Bar Deadlift"
+          purpose: "Hip and posterior chain power"
+          target: "2.5x bodyweight"
+        - name: "Hip Thrust"
+          purpose: "Horizontal force production"
+          target: "1.5x bodyweight x 8"
+        - name: "Nordic Curls"
+          purpose: "Hamstring injury prevention"
+          target: "3x8 controlled"
+        - name: "Single-Leg RDL"
+          purpose: "Unilateral strength and stability"
+
+      power:
+        - name: "Power Clean"
+          purpose: "Triple extension power"
+        - name: "Hang Clean"
+          purpose: "Rate of force development"
+        - name: "Squat Jump"
+          purpose: "Vertical force production"
+        - name: "Broad Jump"
+          purpose: "Horizontal power"
+
+    periodization:
+      off_season:
+        focus: "Build strength base"
+        volume: "Higher"
+        intensity: "Moderate"
+        sprinting: "Tempo, acceleration mechanics"
+
+      pre_season:
+        focus: "Convert strength to power"
+        volume: "Moderate"
+        intensity: "High"
+        sprinting: "Max velocity work"
+
+      in_season:
+        focus: "Maintain, compete"
+        volume: "Low"
+        intensity: "High (but low volume)"
+        sprinting: "Competition prep, recovery"
+
+  plyometrics:
+    progression:
+      level1:
+        description: "Low intensity"
+        exercises: ["Pogo jumps", "Ankle hops", "Skips"]
+        volume: "100-150 contacts"
+
+      level2:
+        description: "Medium intensity"
+        exercises: ["Squat jumps", "Box jumps", "Bounds"]
+        volume: "80-120 contacts"
+
+      level3:
+        description: "High intensity"
+        exercises: ["Depth jumps", "Hurdle hops", "Single-leg bounds"]
+        volume: "40-80 contacts"
+
+    guidelines:
+      surface: "Grass or track preferred, avoid concrete"
+      timing: "After warmup, before heavy strength work"
+      frequency: "2-3x per week"
+      progression: "Master each level before advancing"
+
+# =============================================================================
+# CHEERLEADING
+# =============================================================================
+cheerleading:
+  name: "Cheerleading & Tumbling"
+  description: "Explosive power, flexibility, and skill performance"
+
+  physical_demands:
+    tumbling:
+      - "Lower body power"
+      - "Core strength"
+      - "Upper body pressing strength"
+      - "Body awareness and control"
+
+    stunting:
+      bases:
+        - "Leg and hip strength"
+        - "Pressing power"
+        - "Stability under load"
+      flyers:
+        - "Core stability"
+        - "Flexibility"
+        - "Body control"
+        - "Balance"
+      backspots:
+        - "Grip strength"
+        - "Quick reactions"
+        - "Core stability"
+
+    jumping:
+      - "Vertical power"
+      - "Hip flexor flexibility"
+      - "Toe point strength"
+      - "Landing mechanics"
+
+  strength_training:
+    lower_body:
+      primary:
+        - name: "Squat"
+          purpose: "Base strength for stunting and jumping"
+          sets_reps: "4x6-8"
+        - name: "Bulgarian Split Squat"
+          purpose: "Unilateral power for tumbling"
+          sets_reps: "3x8 each"
+        - name: "Hip Thrust"
+          purpose: "Hip extension power"
+          sets_reps: "3x10"
+        - name: "Calf Raises"
+          purpose: "Jump height and landing"
+          sets_reps: "3x15"
+
+    upper_body:
+      primary:
+        - name: "Overhead Press"
+          purpose: "Pressing power for stunts"
+          sets_reps: "4x6-8"
+        - name: "Push-ups"
+          purpose: "Pushing endurance and stability"
+          target: "3x15+"
+        - name: "Pull-ups"
+          purpose: "Pulling strength for tumbling"
+          target: "3x8"
+        - name: "Pike Press"
+          purpose: "Handspring pressing strength"
+          sets_reps: "3x10"
+
+    core:
+      essential:
+        - name: "Hollow Body Hold"
+          purpose: "Tumbling position"
+          target: "60 seconds"
+        - name: "Arch Hold"
+          purpose: "Back handspring position"
+          target: "30 seconds"
+        - name: "Hanging Leg Raise"
+          purpose: "Hip flexor strength"
+          sets_reps: "3x10"
+        - name: "Side Plank"
+          purpose: "Lateral stability"
+          target: "45 seconds each"
+
+  jump_training:
+    toe_touch_progression:
+      prerequisites:
+        hip_flexor_strength: "Hanging leg raises 3x10"
+        hip_flexor_flexibility: "Full split progression"
+      drills:
+        - "Seated pike stretch"
+        - "V-ups"
+        - "Straddle jumps"
+        - "Snap jumps"
+      cues:
+        - "Chest stays up"
+        - "Reach for toes, not down"
+        - "Quick snap up and down"
+
+    pike_jump:
+      drills:
+        - "Pike stretch"
+        - "V-ups"
+        - "Tuck jumps"
+        - "Pike snaps"
+
+    hurdler:
+      drills:
+        - "Split jumps"
+        - "Lunge jumps"
+        - "Single leg tucks"
+
+    vertical_jump:
+      training:
+        - "Squat jumps"
+        - "Box jumps"
+        - "Depth jumps"
+        - "Approach jumps"
+      target: "Increase by 2-4 inches per season"
+
+  tumbling_strength:
+    back_handspring:
+      strength_requirements:
+        - "Hollow body hold 30s"
+        - "Handstand 10s"
+        - "Push-ups 15"
+        - "Squat jumps 10 consecutive"
+      drills:
+        - "Bridge kickovers"
+        - "Back limber"
+        - "Snap down"
+        - "Jump back to elevated mat"
+
+    back_tuck:
+      strength_requirements:
+        - "Strong back handspring"
+        - "Standing vertical jump 18+ inches"
+        - "Tuck jumps 10 consecutive"
+      drills:
+        - "Tuck jumps"
+        - "Back drop to tuck bounce"
+        - "Spotted back tucks"
+
+  flexibility:
+    priority_areas:
+      hip_flexors:
+        target: "Full front split both sides"
+        stretches:
+          - "Lunge stretch (2 min each side)"
+          - "Couch stretch"
+          - "PNF hip flexor stretch"
+
+      hamstrings:
+        target: "Pike, head to knees"
+        stretches:
+          - "Seated pike (2 min)"
+          - "Standing single leg stretch"
+
+      shoulders:
+        target: "Full overhead mobility"
+        stretches:
+          - "Wall slides"
+          - "Shoulder circles"
+          - "PNF shoulder stretch"
+
+    routine:
+      frequency: "Daily"
+      duration: "15-20 minutes"
+      timing: "After warmup or at end of practice"
+
+# =============================================================================
+# FOOTBALL
+# =============================================================================
+football:
+  name: "American Football"
+  description: "Explosive power, strength, speed, and position-specific training"
+
+  physical_demands:
+    all_positions:
+      - "Explosive power"
+      - "Change of direction"
+      - "Collision preparation"
+      - "Repeated sprint ability"
+      - "Grip strength"
+
+  position_profiles:
+    linemen:
+      offensive:
+        priority_traits:
+          - "Absolute strength"
+          - "Anchor strength"
+          - "Short-area quickness"
+          - "Hand fighting"
+        key_metrics:
+          squat: "2x+ bodyweight"
+          bench: "1.5x+ bodyweight"
+          ten_yard: "<1.8 seconds"
+        training_emphasis:
+          - "Heavy compound lifts"
+          - "Explosive starts"
+          - "Lateral shuffle"
+          - "Hand speed drills"
+
+      defensive:
+        priority_traits:
+          - "Explosive first step"
+          - "Power and hand fighting"
+          - "Pursuit speed"
+        key_metrics:
+          vertical_jump: "28+ inches"
+          pro_agility: "<4.6 seconds"
+        training_emphasis:
+          - "Power cleans"
+          - "Box squats"
+          - "Sled work"
+
+    skill_positions:
+      receiver_db:
+        priority_traits:
+          - "Speed and acceleration"
+          - "Change of direction"
+          - "Leaping ability"
+          - "Route running precision"
+        key_metrics:
+          forty: "<4.6 seconds"
+          vertical: "34+ inches"
+          three_cone: "<7.0 seconds"
+        training_emphasis:
+          - "Sprint mechanics"
+          - "Plyometrics"
+          - "Hip mobility"
+          - "Reactive agility"
+
+      running_back:
+        priority_traits:
+          - "Acceleration"
+          - "Contact balance"
+          - "Vision and cutting"
+          - "Pass catching"
+        key_metrics:
+          ten_yard: "<1.6 seconds"
+          broad_jump: "10+ feet"
+        training_emphasis:
+          - "Single-leg power"
+          - "Core stability"
+          - "Lateral movement"
+
+      linebacker:
+        priority_traits:
+          - "Explosive power"
+          - "Tackling strength"
+          - "Coverage speed"
+          - "Pursuit angles"
+        key_metrics:
+          squat: "2x bodyweight"
+          forty: "<4.7 seconds"
+        training_emphasis:
+          - "Hybrid training (strength + speed)"
+          - "Change of direction"
+          - "Block shedding"
+
+      quarterback:
+        priority_traits:
+          - "Core rotational power"
+          - "Lower body stability"
+          - "Mobility in pocket"
+          - "Arm care"
+        training_emphasis:
+          - "Rotational medicine ball work"
+          - "Single-leg stability"
+          - "Hip mobility"
+          - "Shoulder prehab"
+
+  strength_program:
+    off_season:
+      phase1_hypertrophy:
+        duration: "4-6 weeks"
+        goals: "Build muscle mass"
+        sets_reps: "4x8-12"
+        exercises:
+          - "Squat variations"
+          - "Bench press variations"
+          - "Rows and pulls"
+          - "Accessory work"
+
+      phase2_strength:
+        duration: "4-6 weeks"
+        goals: "Max strength development"
+        sets_reps: "5x5, 4x3"
+        exercises:
+          - "Back squat"
+          - "Bench press"
+          - "Deadlift"
+          - "Weighted pull-ups"
+
+      phase3_power:
+        duration: "4-6 weeks"
+        goals: "Convert to explosive power"
+        sets_reps: "4-6 sets x 2-5 reps"
+        exercises:
+          - "Power cleans"
+          - "Box squats (speed)"
+          - "Bench throws"
+          - "Plyometrics"
+
+    in_season:
+      frequency: "2-3x per week"
+      focus: "Maintain strength, prevent injury"
+      volume: "Reduced 40-50%"
+      intensity: "High (85%+) but low volume"
+
+  speed_agility:
+    linear_speed:
+      ten_yard_explosion:
+        drills:
+          - "Falling starts"
+          - "Wall drives"
+          - "3-point starts"
+          - "10-yard builds"
+
+      forty_yard_dash:
+        phases:
+          - "First 10: Explosion and drive"
+          - "10-20: Transition"
+          - "20-40: Max velocity maintenance"
+        training: "Phase-specific work"
+
+    change_of_direction:
+      pro_agility:
+        technique_cues:
+          - "Low hip position in cuts"
+          - "Push off outside foot"
+          - "Eyes up"
+          - "Tight turns"
+
+      three_cone:
+        drills:
+          - "Figure 8s"
+          - "W drill"
+          - "T drill"
+
+    reactive_agility:
+      drills:
+        - "Mirror drills"
+        - "Ball drops"
+        - "1v1 pursuit"
+        - "Read and react"
+
+  conditioning:
+    gassers:
+      distance: "Sideline to sideline (53 yards x 4)"
+      rest: "Position-specific"
+      purpose: "Repeated sprint ability"
+
+    position_specific:
+      linemen:
+        emphasis: "Short bursts, recovery"
+        work_rest: "1:4"
+        distance: "10-20 yards"
+
+      skill_positions:
+        emphasis: "Longer sprints, multiple efforts"
+        work_rest: "1:2 to 1:3"
+        distance: "40-100 yards"
+
+# =============================================================================
+# BASEBALL / SOFTBALL
+# =============================================================================
+baseball:
+  name: "Baseball & Softball"
+  description: "Rotational power, arm care, and explosive movements"
+
+  physical_demands:
+    hitting:
+      - "Hip rotation speed"
+      - "Core rotational power"
+      - "Bat speed"
+      - "Lower body stability"
+
+    throwing:
+      - "Arm strength and health"
+      - "Scapular stability"
+      - "Rotator cuff strength"
+      - "Hip-to-shoulder separation"
+
+    fielding:
+      - "Lateral quickness"
+      - "First-step explosion"
+      - "Throwing accuracy"
+
+    base_running:
+      - "Acceleration"
+      - "Base stealing technique"
+      - "Sliding mechanics"
+
+  rotational_power:
+    medicine_ball_work:
+      essential_throws:
+        - name: "Rotational Scoop Toss"
+          purpose: "Hip-initiated rotation"
+          weight: "6-10 lbs"
+          sets_reps: "3x6 each side"
+
+        - name: "Perpendicular Throw"
+          purpose: "Separation and snap"
+          weight: "6-10 lbs"
+          sets_reps: "3x6 each side"
+
+        - name: "Shot Put Throw"
+          purpose: "Linear to rotational transfer"
+          weight: "8-12 lbs"
+          sets_reps: "3x5 each side"
+
+        - name: "Overhead Slam"
+          purpose: "Full body power"
+          weight: "10-15 lbs"
+          sets_reps: "3x8"
+
+    cable_work:
+      exercises:
+        - name: "Cable Rotation"
+          purpose: "Controlled rotation strength"
+          sets_reps: "3x12 each side"
+
+        - name: "Pallof Press"
+          purpose: "Anti-rotation core stability"
+          sets_reps: "3x10 each side"
+
+        - name: "Cable Chops"
+          purpose: "Diagonal core power"
+          sets_reps: "3x10 each side"
+
+  arm_care:
+    priority: "Highest - injury prevention is critical"
+
+    warmup_routine:
+      duration: "15-20 minutes before throwing"
+      components:
+        - "Band work (J-band or similar)"
+        - "Shoulder circles"
+        - "Arm circles"
+        - "Wrist circles"
+        - "Long toss progression"
+
+    strengthening:
+      rotator_cuff:
+        exercises:
+          - name: "External Rotation"
+            position: "Side-lying or cable"
+            sets_reps: "3x15"
+          - name: "Internal Rotation"
+            sets_reps: "3x15"
+          - name: "Prone Y-T-W"
+            sets_reps: "2x10 each"
+
+      scapular_stability:
+        exercises:
+          - name: "Face Pulls"
+            sets_reps: "3x15"
+          - name: "Scap Push-ups"
+            sets_reps: "2x15"
+          - name: "Low Trap Raise"
+            sets_reps: "2x12"
+
+    throwing_program:
+      long_toss:
+        purpose: "Build arm strength"
+        progression:
+          - "60 feet - comfortable"
+          - "90 feet"
+          - "120 feet"
+          - "150+ feet (position dependent)"
+        frequency: "3-4x per week in off-season"
+
+      recovery:
+        after_throwing:
+          - "Light band work"
+          - "Ice if needed"
+          - "Shoulder mobility"
+
+  strength_training:
+    lower_body:
+      priority: "Power production for hitting and throwing"
+      exercises:
+        - name: "Front Squat"
+          purpose: "Upright posture, quad strength"
+          sets_reps: "4x5"
+        - name: "Romanian Deadlift"
+          purpose: "Posterior chain"
+          sets_reps: "3x8"
+        - name: "Lateral Lunge"
+          purpose: "Lateral movement"
+          sets_reps: "3x8 each"
+        - name: "Single-Leg Squat"
+          purpose: "Unilateral power"
+          sets_reps: "3x6 each"
+
+    upper_body:
+      caution: "Avoid excessive pressing volume for throwing athletes"
+      exercises:
+        - name: "DB Bench Press"
+          purpose: "Pressing with shoulder-friendly ROM"
+          sets_reps: "3x8"
+        - name: "Rows (various)"
+          purpose: "Pulling strength, shoulder balance"
+          sets_reps: "4x10"
+        - name: "Pull-ups"
+          purpose: "Lat strength"
+          sets_reps: "3x8"
+        - name: "Landmine Press"
+          purpose: "Shoulder-friendly pressing"
+          sets_reps: "3x10 each"
+
+    core:
+      rotational_focus: true
+      exercises:
+        - "Medicine ball throws"
+        - "Cable rotations"
+        - "Pallof press"
+        - "Dead bug variations"
+
+  speed_agility:
+    first_step:
+      drills:
+        - "Lateral first-step"
+        - "Crossover start"
+        - "Drop step"
+      application: "Fielding reactions"
+
+    base_running:
+      sprints:
+        - "Home to first (90 feet)"
+        - "First to third"
+        - "Secondary leads"
+      technique: "Round the bases efficiently"
+
+  position_specific:
+    pitcher:
+      additional_focus:
+        - "Hip mobility"
+        - "Thoracic rotation"
+        - "Single-leg stability"
+        - "Conditioning for multiple innings"
+
+    catcher:
+      additional_focus:
+        - "Hip and ankle mobility"
+        - "Quad endurance"
+        - "Quick feet"
+        - "Throwing from knees"
+
+    infielder:
+      additional_focus:
+        - "Lateral quickness"
+        - "Soft hands"
+        - "Quick transfer"
+
+    outfielder:
+      additional_focus:
+        - "Sprint speed"
+        - "Route running"
+        - "Arm strength for throws"
+
+# =============================================================================
+# BASKETBALL
+# =============================================================================
+basketball:
+  name: "Basketball"
+  description: "Vertical power, lateral quickness, and endurance"
+
+  physical_demands:
+    - "Vertical jump ability"
+    - "Lateral quickness"
+    - "Repeat sprint ability"
+    - "Change of direction"
+    - "Core stability"
+    - "Upper body strength"
+
+  training_priorities:
+    vertical_jump:
+      target_improvement: "2-6 inches per off-season"
+      training:
+        strength:
+          - "Back squat (1.5-2x BW goal)"
+          - "Trap bar deadlift"
+          - "Single-leg variations"
+
+        power:
+          - "Power cleans"
+          - "Squat jumps"
+          - "Box jumps"
+
+        reactive:
+          - "Depth jumps"
+          - "Approach jumps"
+          - "Rim touches"
+
+    lateral_movement:
+      drills:
+        - "Defensive slides"
+        - "Lateral bounds"
+        - "5-10-5 shuttle"
+        - "Cone drills"
+      strength:
+        - "Lateral lunges"
+        - "Copenhagen adduction"
+        - "Single-leg hip work"
+
+    conditioning:
+      game_demands: "High-intensity intervals, 8-12 seconds bursts"
+      training:
+        - "Court sprints"
+        - "Suicide drills"
+        - "17s (sideline to sideline)"
+        - "Full-court transition drills"
+
+  injury_prevention:
+    ankle:
+      exercises:
+        - "Single-leg balance"
+        - "Ankle circles"
+        - "Proprioception work"
+
+    knee:
+      exercises:
+        - "Terminal knee extension"
+        - "Step-downs"
+        - "Proper landing mechanics"
+
+    acl_prevention:
+      focus:
+        - "Hamstring strength"
+        - "Hip stability"
+        - "Landing mechanics"
+        - "Deceleration training"
+
+# =============================================================================
+# SOCCER
+# =============================================================================
+soccer:
+  name: "Soccer/Football"
+  description: "Endurance, repeated sprints, and change of direction"
+
+  physical_demands:
+    - "Aerobic endurance (8-13 km per game)"
+    - "Repeated sprint ability"
+    - "Change of direction"
+    - "Kicking power"
+    - "Heading ability"
+
+  training_priorities:
+    aerobic_base:
+      target_metrics:
+        yo_yo_intermittent: ">Level 19"
+        vO2max: ">55 ml/kg/min"
+      training:
+        - "Tempo runs"
+        - "Small-sided games"
+        - "Fartlek training"
+
+    repeated_sprint:
+      protocol:
+        sprints: 6
+        distance: "30-40m"
+        rest: "20-30 seconds"
+        sets: 3
+        between_sets: "4 min"
+
+    strength:
+      exercises:
+        - name: "Back Squat"
+          target: "1.8x bodyweight"
+        - name: "Single-Leg Squat"
+          target: "3x8 each"
+        - name: "Nordic Curls"
+          target: "Hamstring injury prevention"
+        - name: "Hip Adduction"
+          target: "Groin injury prevention"
+
+    change_of_direction:
+      drills:
+        - "Agility ladder"
+        - "Cone cuts"
+        - "1v1 defensive drills"
+        - "Reactive agility"
+
+  injury_prevention:
+    fifa_11_plus:
+      description: "Evidence-based warmup program"
+      components:
+        - "Running exercises"
+        - "Strength and balance"
+        - "Running and cutting"
+      frequency: "Before every training session"
+
+    groin_program:
+      exercises:
+        - "Copenhagen adduction"
+        - "Side-lying adduction"
+        - "Sumo squats"
+
+# =============================================================================
+# GENERAL YOUTH ATHLETE
+# =============================================================================
+youth_athlete:
+  name: "Youth Athletic Development"
+  description: "Age-appropriate training for young athletes"
+
+  principles:
+    long_term_development:
+      description: "Build foundation, don't specialize too early"
+      windows_of_opportunity:
+        speed: "Ages 6-9 and 11-14"
+        strength: "After puberty onset"
+        skill: "Anytime, but especially pre-puberty"
+
+    movement_literacy:
+      priority: "Highest"
+      skills:
+        - "Running mechanics"
+        - "Jumping and landing"
+        - "Throwing and catching"
+        - "Changing direction"
+        - "Balance and coordination"
+
+    fun_first:
+      description: "Keep it enjoyable to build lifelong habits"
+
+  age_guidelines:
+    ages_6_9:
+      focus:
+        - "Fundamental movement skills"
+        - "Games and play"
+        - "Multiple sports exposure"
+      avoid:
+        - "Heavy resistance training"
+        - "Single-sport specialization"
+        - "Excessive volume"
+
+    ages_10_13:
+      focus:
+        - "Sport skill development"
+        - "Bodyweight strength"
+        - "Speed and agility"
+        - "Light resistance training with proper form"
+      strength_training:
+        approach: "Technique-focused, bodyweight and light loads"
+        exercises:
+          - "Bodyweight squats"
+          - "Push-ups"
+          - "Rows"
+          - "Planks"
+
+    ages_14_18:
+      focus:
+        - "Progressive strength training"
+        - "Sport-specific preparation"
+        - "Power development"
+      strength_training:
+        approach: "Can begin traditional strength training with proper coaching"
+        progression: "Learn technique, then add load gradually"
+
+  injury_prevention:
+    overuse_prevention:
+      rules:
+        - "No single sport more than 8 months/year"
+        - "Hours per week < age (e.g., 12-year-old < 12 hours)"
+        - "At least 1-2 rest days per week"
+        - "Annual rest period of 1-3 months"
+
+    growth_plate_considerations:
+      during_growth_spurts:
+        - "Reduce intensity"
+        - "Increase flexibility work"
+        - "Monitor for pain"
+        - "Adjust training load"

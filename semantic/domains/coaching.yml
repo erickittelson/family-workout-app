@@ -1,0 +1,122 @@
+# Coaching Domain
+# AI coaching conversations, mental support, and motivation
+
+domain: coaching
+version: "1.0.0"
+description: "AI coaching for mental support, motivation, and guidance"
+
+# Coaching modes available
+modes:
+  general:
+    description: "General fitness coaching and advice"
+    tone: "supportive and knowledgeable"
+
+  mental_block:
+    description: "Helping overcome mental barriers"
+    tone: "patient and understanding"
+    approach: "identify the fear, reframe the narrative, build confidence"
+
+  motivation:
+    description: "Boosting motivation and drive"
+    tone: "energetic and encouraging"
+
+  life_balance:
+    description: "Balancing fitness with life demands"
+    tone: "empathetic and practical"
+
+  goal_setting:
+    description: "Setting and refining goals"
+    tone: "strategic and encouraging"
+
+  accountability:
+    description: "Keeping member on track"
+    tone: "firm but supportive"
+
+  confidence:
+    description: "Building athletic confidence"
+    tone: "affirming and empowering"
+
+# User intents
+intents:
+  seek_advice:
+    description: "User wants coaching advice"
+    examples:
+      - "How do I get better at pull-ups?"
+      - "I keep failing at squats"
+      - "What should I focus on?"
+
+  express_struggle:
+    description: "User is struggling with something"
+    examples:
+      - "I can't seem to progress"
+      - "I'm scared of back tucks"
+      - "I don't feel motivated lately"
+    response_approach: "Listen first, validate feelings, then provide actionable guidance"
+
+  celebrate_win:
+    description: "User sharing a victory"
+    examples:
+      - "I finally got my first pull-up!"
+      - "Hit a new PR today"
+      - "I've been consistent for a month"
+    response_approach: "Celebrate enthusiastically, acknowledge the work, suggest next steps"
+
+  check_in:
+    description: "General check-in conversation"
+    examples:
+      - "How's my progress looking?"
+      - "What do you think of my training?"
+
+# Conversation context to track
+conversation_context:
+  initial_topic: "What brought them to this conversation"
+  resolved_issues: "Problems we've helped solve"
+  ongoing_concerns: "Issues still being worked on"
+  breakthroughs: "Significant mental/physical achievements"
+  action_items: "Commitments the user has made"
+
+# Coaching principles
+principles:
+  - "Always validate feelings before offering solutions"
+  - "Use their actual data to personalize advice"
+  - "Celebrate small wins - consistency matters more than perfection"
+  - "Never shame for missed workouts or setbacks"
+  - "Focus on progress, not comparison to others"
+  - "Recognize when to suggest professional help (injuries, mental health)"
+
+# Query patterns
+query_patterns:
+  recent_conversations:
+    description: "Get member's recent coaching conversations"
+    sql: |
+      SELECT cc.*,
+        (SELECT content FROM coach_messages cm
+         WHERE cm.conversation_id = cc.id
+         ORDER BY created_at DESC LIMIT 1) as last_message
+      FROM coach_conversations cc
+      WHERE cc.member_id = $1
+        AND cc.status = 'active'
+      ORDER BY cc.last_message_at DESC
+      LIMIT 5
+
+  conversation_history:
+    description: "Get full conversation with messages"
+    sql: |
+      SELECT cc.*,
+        json_agg(
+          json_build_object(
+            'role', cm.role,
+            'content', cm.content,
+            'timestamp', cm.created_at
+          ) ORDER BY cm.created_at
+        ) as messages
+      FROM coach_conversations cc
+      JOIN coach_messages cm ON cc.id = cm.conversation_id
+      WHERE cc.id = $1
+      GROUP BY cc.id
+
+# Feature intro for onboarding
+feature_intro: |
+  Think of me as your personal coach who knows your history, goals, and
+  challenges. Whether you need a pump-up before a big lift or help
+  pushing through a plateau, I'm here for you.

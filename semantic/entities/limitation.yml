@@ -1,0 +1,128 @@
+# Limitation Entity
+# Physical limitations, injuries, and conditions
+
+entity: limitation
+version: "1.0.0"
+description: "A physical limitation that affects exercise selection"
+table: member_limitations
+
+# Primary identifier
+primary_key: id
+foreign_keys:
+  - field: member_id
+    references: circle_members.id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier"
+
+  - name: type
+    type: enum
+    values: ["injury", "condition", "preference"]
+    description: "Type of limitation"
+    required: true
+
+  - name: description
+    type: string
+    description: "Description of the limitation"
+    required: true
+
+  - name: affected_areas
+    type: array
+    description: "Body parts affected"
+    values: ["shoulder", "back", "neck", "knee", "hip", "ankle", "wrist",
+             "elbow", "lower_back", "upper_back", "core"]
+
+  - name: severity
+    type: enum
+    values: ["mild", "moderate", "severe"]
+    description: "How much it limits activity"
+
+  - name: start_date
+    type: timestamp
+    description: "When the limitation started"
+
+  - name: end_date
+    type: timestamp
+    description: "When the limitation ended (null if ongoing)"
+
+  - name: active
+    type: boolean
+    description: "Whether currently limiting"
+    default: true
+
+# Exercise filtering rules
+filtering_rules:
+  shoulder:
+    avoid:
+      - exercises with "overhead" in name or instructions
+      - exercises targeting "shoulders" as primary
+    modify:
+      - reduce range of motion on pressing movements
+      - prefer neutral grip over pronated
+
+  lower_back:
+    avoid:
+      - exercises with "deadlift" in name (unless sumo/trap bar)
+      - exercises with "good morning" in name
+      - heavy spinal loading exercises
+    modify:
+      - use back support when available
+      - prefer machines over free weights for back work
+
+  knee:
+    avoid:
+      - deep squats
+      - jumping/plyometric exercises
+      - leg extensions
+    modify:
+      - limit squat depth to parallel or above
+      - prefer hip-dominant over knee-dominant
+
+  wrist:
+    avoid:
+      - exercises requiring wrist extension under load
+    modify:
+      - use wrist wraps
+      - prefer neutral grip or machines
+
+# Query examples
+examples:
+  - question: "What limitations does the member have?"
+    sql: |
+      SELECT type, description, severity, affected_areas
+      FROM member_limitations
+      WHERE member_id = $1 AND active = true
+      ORDER BY severity DESC
+
+  - question: "Is it safe for this member to do overhead press?"
+    sql: |
+      SELECT EXISTS(
+        SELECT 1 FROM member_limitations
+        WHERE member_id = $1
+          AND active = true
+          AND 'shoulder' = ANY(affected_areas)
+      ) as has_shoulder_limitation
+
+  - question: "What exercises should be avoided?"
+    sql: |
+      WITH member_limitations AS (
+        SELECT unnest(affected_areas) as area
+        FROM member_limitations
+        WHERE member_id = $1 AND active = true
+      )
+      SELECT DISTINCT e.name
+      FROM exercises e
+      WHERE EXISTS (
+        SELECT 1 FROM member_limitations ml
+        WHERE e.contraindications && ARRAY[ml.area]
+      )
+
+# Synonyms
+synonyms:
+  limitation: [injury, condition, restriction, issue]
+  shoulder: [shoulder joint, rotator cuff, delt]
+  lower_back: [lumbar, low back, L4, L5]
+  knee: [knee joint, patella, ACL, meniscus]

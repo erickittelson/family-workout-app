@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { goals, familyMembers } from "@/lib/db/schema";
+import { goals, circleMembers } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function PATCH(
@@ -29,7 +29,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Goal not found" }, { status: 404 });
     }
 
-    if (goal.member.familyId !== session.familyId) {
+    if (goal.member.circleId !== session.circleId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -39,6 +39,8 @@ export async function PATCH(
       updates.status = body.status;
       if (body.status === "completed") {
         updates.completedAt = new Date();
+      } else if (body.status === "active") {
+        updates.completedAt = null;
       }
     }
 
@@ -52,6 +54,18 @@ export async function PATCH(
 
     if (body.description !== undefined) {
       updates.description = body.description;
+    }
+
+    if (body.category !== undefined) {
+      updates.category = body.category;
+    }
+
+    if (body.targetValue !== undefined) {
+      updates.targetValue = body.targetValue;
+    }
+
+    if (body.targetUnit !== undefined) {
+      updates.targetUnit = body.targetUnit;
     }
 
     if (body.targetDate !== undefined) {
@@ -94,7 +108,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Goal not found" }, { status: 404 });
     }
 
-    if (goal.member.familyId !== session.familyId) {
+    if (goal.member.circleId !== session.circleId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

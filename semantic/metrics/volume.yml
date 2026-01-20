@@ -1,0 +1,185 @@
+# Volume Metrics
+# Training volume calculations and load management
+
+metric: volume
+version: "1.0.0"
+description: "Training volume and load calculations"
+
+# Key metrics
+definitions:
+  total_volume:
+    description: "Total weight x reps (tonnage)"
+    formula: |
+      SELECT SUM(es.actual_reps * COALESCE(es.actual_weight, 1)) as volume
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE ws.member_id = $1
+        AND ws.status = 'completed'
+        AND ws.date >= $2
+        AND es.completed = true
+    unit: "lbs"
+
+  weekly_sets_per_muscle:
+    description: "Sets per muscle group per week"
+    formula: |
+      SELECT
+        unnest(e.muscle_groups) as muscle,
+        COUNT(es.id) as total_sets
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercises e ON wse.exercise_id = e.id
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE ws.member_id = $1
+        AND ws.status = 'completed'
+        AND ws.date >= DATE_TRUNC('week', NOW())
+        AND es.completed = true
+      GROUP BY unnest(e.muscle_groups)
+    unit: "sets"
+    targets:
+      minimum: 10
+      optimal: 15
+      maximum: 25
+
+  relative_volume:
+    description: "Volume relative to bodyweight"
+    formula: "total_volume / bodyweight"
+    context: "Allows comparison across different body sizes"
+
+  volume_load:
+    description: "Sets x reps x RPE (intensity-adjusted volume)"
+    formula: |
+      SELECT SUM(es.actual_reps * COALESCE(es.rpe, 7) / 10) as load
+      FROM exercise_sets es
+      JOIN workout_session_exercises wse ON es.session_exercise_id = wse.id
+      JOIN workout_sessions ws ON wse.session_id = ws.id
+      WHERE ws.member_id = $1
+        AND ws.date >= $2
+        AND es.completed = true
+    unit: "load units"
+
+# Volume analysis
+analysis:
+  progressive_overload:
+    description: "Track volume increases over time"
+    formula: |
+      WITH weekly_volume AS (
+        SELECT
+          DATE_TRUNC('week', ws.date) as week,
+          SUM(es.actual_reps * COALESCE(es.actual_weight, 1)) as volume
+        FROM workout_sessions ws
+        JOIN workout_session_exercises wse ON ws.id = wse.session_id
+        JOIN exercise_sets es ON wse.id = es.session_exercise_id
+        WHERE ws.member_id = $1
+          AND ws.date >= NOW() - INTERVAL '8 weeks'
+          AND es.completed = true
+        GROUP BY DATE_TRUNC('week', ws.date)
+      )
+      SELECT
+        week,
+        volume,
+        volume - LAG(volume) OVER (ORDER BY week) as change,
+        (volume - LAG(volume) OVER (ORDER BY week)) * 100.0 /
+          NULLIF(LAG(volume) OVER (ORDER BY week), 0) as pct_change
+      FROM weekly_volume
+      ORDER BY week
+
+  muscle_balance:
+    description: "Compare volume distribution across muscle groups"
+    formula: |
+      WITH muscle_volume AS (
+        SELECT
+          unnest(e.muscle_groups) as muscle,
+          SUM(es.actual_reps * COALESCE(es.actual_weight, 1)) as volume
+        FROM workout_sessions ws
+        JOIN workout_session_exercises wse ON ws.id = wse.session_id
+        JOIN exercises e ON wse.exercise_id = e.id
+        JOIN exercise_sets es ON wse.id = es.session_exercise_id
+        WHERE ws.member_id = $1
+          AND ws.date >= NOW() - INTERVAL '30 days'
+          AND es.completed = true
+        GROUP BY unnest(e.muscle_groups)
+      )
+      SELECT
+        muscle,
+        volume,
+        volume * 100.0 / SUM(volume) OVER () as pct_of_total
+      FROM muscle_volume
+      ORDER BY volume DESC
+
+  volume_trend:
+    description: "Week-over-week volume trend"
+    target: "2-5% increase per week for progression"
+
+# Guidelines
+guidelines:
+  hypertrophy:
+    description: "Muscle building volume targets"
+    sets_per_muscle_per_week:
+      minimum: 10
+      optimal: "15-20"
+      maximum: 25
+    note: "More is not always better - recovery matters"
+
+  strength:
+    description: "Strength-focused volume"
+    sets_per_muscle_per_week:
+      minimum: 6
+      optimal: "10-15"
+    intensity: "Higher weight, lower reps"
+
+  deload:
+    description: "Planned recovery week"
+    volume_reduction: "40-60% of normal"
+    frequency: "Every 4-6 weeks or as needed"
+    triggers:
+      - "Stalled progress for 2+ weeks"
+      - "Increased fatigue/soreness"
+      - "Sleep/recovery issues"
+      - "Motivation decline"
+
+# Query examples
+examples:
+  - question: "What's my weekly volume by muscle?"
+    sql: |
+      SELECT
+        unnest(e.muscle_groups) as muscle,
+        COUNT(DISTINCT wse.id) as exercises,
+        COUNT(es.id) as total_sets,
+        SUM(es.actual_reps) as total_reps,
+        SUM(es.actual_reps * COALESCE(es.actual_weight, 1)) as volume
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercises e ON wse.exercise_id = e.id
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE ws.member_id = $1
+        AND ws.date >= DATE_TRUNC('week', NOW())
+        AND es.completed = true
+      GROUP BY unnest(e.muscle_groups)
+      ORDER BY volume DESC
+
+  - question: "Am I doing enough chest work?"
+    sql: |
+      SELECT COUNT(es.id) as sets_this_week
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercises e ON wse.exercise_id = e.id
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE ws.member_id = $1
+        AND 'chest' = ANY(e.muscle_groups)
+        AND ws.date >= DATE_TRUNC('week', NOW())
+        AND es.completed = true
+
+# Insights
+insights:
+  low_volume_warning:
+    condition: "sets_this_week < 10 for muscle"
+    template: "Your {muscle} only got {sets} sets this week. Consider adding more work next session."
+
+  volume_increase:
+    condition: "weekly_volume > last_week * 1.1"
+    template: "Nice! Your volume is up {percent}% from last week. Progressive overload in action."
+
+  deload_suggestion:
+    condition: "4+ weeks of increasing volume without deload"
+    template: "You've been pushing hard for {weeks} weeks. Consider a deload week to let your body recover."

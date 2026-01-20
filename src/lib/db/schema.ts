@@ -1,3 +1,13 @@
+/**
+ * Consolidated Database Schema - January 2026
+ *
+ * Clean schema with:
+ * - Neon Auth integration (individual user authentication)
+ * - Multi-circle support (users can belong to multiple circles)
+ * - Vector embeddings for AI similarity search
+ * - Optimized for AI/OpenAI API performance
+ */
+
 import {
   pgTable,
   text,
@@ -7,112 +17,123 @@ import {
   real,
   boolean,
   jsonb,
-  primaryKey,
   index,
+  uniqueIndex,
   vector,
+  decimal,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // ============================================================================
-// AUTH TABLES (for passkey authentication)
+// ONBOARDING PROGRESS (persisted conversation state)
 // ============================================================================
 
-export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  email: text("email").unique(),
-  name: text("name"),
-  image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const accounts = pgTable(
-  "accounts",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
-    provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull(),
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: text("token_type"),
-    scope: text("scope"),
-    id_token: text("id_token"),
-    session_state: text("session_state"),
-  },
-  (account) => [
-    primaryKey({ columns: [account.provider, account.providerAccountId] }),
-  ]
-);
-
-export const sessions = pgTable("sessions", {
-  sessionToken: text("session_token").primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { mode: "date" }).notNull(),
-});
-
-export const verificationTokens = pgTable(
-  "verification_tokens",
-  {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull(),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
-  },
-  (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })]
-);
-
-export const authenticators = pgTable(
-  "authenticators",
-  {
-    credentialID: text("credential_id").notNull().unique(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    providerAccountId: text("provider_account_id").notNull(),
-    credentialPublicKey: text("credential_public_key").notNull(),
-    counter: integer("counter").notNull(),
-    credentialDeviceType: text("credential_device_type").notNull(),
-    credentialBackedUp: boolean("credential_backed_up").notNull(),
-    transports: text("transports"),
-  },
-  (authenticator) => [
-    primaryKey({ columns: [authenticator.userId, authenticator.credentialID] }),
-  ]
-);
-
-// ============================================================================
-// FAMILY & MEMBERS
-// ============================================================================
-
-export const families = pgTable("families", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
-  passkey: text("passkey").notNull(), // Shared family passkey (hashed)
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const familyMembers = pgTable(
-  "family_members",
+export const onboardingProgress = pgTable(
+  "onboarding_progress",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    familyId: uuid("family_id")
-      .notNull()
-      .references(() => families.id, { onDelete: "cascade" }),
-    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
-    name: text("name").notNull(),
-    avatar: text("avatar"),
-    dateOfBirth: timestamp("date_of_birth"),
-    gender: text("gender"), // male, female, other
+    userId: text("user_id").notNull().unique(), // Neon Auth user ID
+    currentPhase: text("current_phase").default("welcome").notNull(),
+    phaseIndex: integer("phase_index").default(0).notNull(),
+    extractedData: jsonb("extracted_data").$type<Record<string, unknown>>().default({}).notNull(),
+    conversationHistory: jsonb("conversation_history").$type<Array<{
+      role: "user" | "assistant";
+      content: string;
+      timestamp: string;
+    }>>().default([]).notNull(),
+    completedAt: timestamp("completed_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (member) => [index("family_member_family_idx").on(member.familyId)]
+  (progress) => [
+    uniqueIndex("onboarding_progress_user_idx").on(progress.userId),
+  ]
+);
+
+// ============================================================================
+// CIRCLES & MEMBERS
+// ============================================================================
+
+export const circles = pgTable("circles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Circle Invitations - Invite links for joining circles
+ */
+export const circleInvitations = pgTable(
+  "circle_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    circleId: uuid("circle_id")
+      .notNull()
+      .references(() => circles.id, { onDelete: "cascade" }),
+    code: text("code").notNull().unique(), // Short invite code (e.g., "ABC123")
+    createdBy: uuid("created_by").notNull(), // Member ID who created the invite
+    email: text("email"), // Optional: specific email to invite
+    role: text("role").default("member").notNull(), // Role to assign on join
+    maxUses: integer("max_uses"), // null = unlimited
+    uses: integer("uses").default(0).notNull(),
+    expiresAt: timestamp("expires_at"), // null = never expires
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (invitation) => [
+    index("invitation_circle_idx").on(invitation.circleId),
+    uniqueIndex("invitation_code_idx").on(invitation.code),
+  ]
+);
+
+/**
+ * Circle Members - Links Neon Auth users to circles
+ * Users can belong to multiple circles with different roles
+ */
+export const circleMembers = pgTable(
+  "circle_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    circleId: uuid("circle_id")
+      .notNull()
+      .references(() => circles.id, { onDelete: "cascade" }),
+    // Links to neon_auth.user - the authenticated user
+    userId: text("user_id"), // Neon Auth user ID (text, not uuid)
+    name: text("name").notNull(),
+    profilePicture: text("profile_picture"), // URL to uploaded profile picture
+    dateOfBirth: timestamp("date_of_birth"),
+    gender: text("gender"), // male, female, other
+    role: text("role").default("member").notNull(), // owner, admin, member
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (member) => [
+    index("circle_member_circle_idx").on(member.circleId),
+    index("circle_member_user_idx").on(member.userId),
+  ]
+);
+
+// ============================================================================
+// CIRCLE EQUIPMENT
+// ============================================================================
+
+export const circleEquipment = pgTable(
+  "circle_equipment",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    circleId: uuid("circle_id")
+      .notNull()
+      .references(() => circles.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    category: text("category").notNull(), // cardio, strength, flexibility, accessories
+    description: text("description"),
+    quantity: integer("quantity").default(1),
+    brand: text("brand"),
+    model: text("model"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (equipment) => [index("circle_equipment_circle_idx").on(equipment.circleId)]
 );
 
 // ============================================================================
@@ -125,7 +146,7 @@ export const memberMetrics = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     memberId: uuid("member_id")
       .notNull()
-      .references(() => familyMembers.id, { onDelete: "cascade" }),
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
     date: timestamp("date").defaultNow().notNull(),
     weight: real("weight"), // in lbs
     height: real("height"), // in inches
@@ -150,7 +171,7 @@ export const memberLimitations = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     memberId: uuid("member_id")
       .notNull()
-      .references(() => familyMembers.id, { onDelete: "cascade" }),
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
     type: text("type").notNull(), // injury, condition, preference
     description: text("description").notNull(),
     affectedAreas: jsonb("affected_areas").$type<string[]>(), // body parts affected
@@ -173,7 +194,7 @@ export const goals = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     memberId: uuid("member_id")
       .notNull()
-      .references(() => familyMembers.id, { onDelete: "cascade" }),
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: text("description"),
     category: text("category").notNull(), // strength, cardio, skill, weight, flexibility, endurance
@@ -214,7 +235,7 @@ export const milestones = pgTable(
 );
 
 // ============================================================================
-// EXERCISE LIBRARY
+// EXERCISE LIBRARY (with AI embeddings)
 // ============================================================================
 
 export const exercises = pgTable(
@@ -224,23 +245,47 @@ export const exercises = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     instructions: text("instructions"),
-    category: text("category").notNull(), // strength, cardio, flexibility, skill, sport
-    muscleGroups: jsonb("muscle_groups").$type<string[]>(), // chest, back, legs, etc.
+    category: text("category").notNull(), // strength, cardio, flexibility, skill, sport, plyometric
+    muscleGroups: jsonb("muscle_groups").$type<string[]>(), // primary muscles targeted
+    secondaryMuscles: jsonb("secondary_muscles").$type<string[]>(), // secondary muscles
     equipment: jsonb("equipment").$type<string[]>(), // barbell, dumbbell, machine, bodyweight
+    equipmentAlternatives: jsonb("equipment_alternatives").$type<string[]>(),
     difficulty: text("difficulty"), // beginner, intermediate, advanced
+    force: text("force"), // push, pull, static, dynamic
+    mechanic: text("mechanic"), // compound, isolation
+    benefits: jsonb("benefits").$type<string[]>(), // strength, speed, power, flexibility, endurance, balance, coordination
+    contraindications: jsonb("contraindications").$type<string[]>(),
+    progressions: jsonb("progressions").$type<string[]>(), // pull-up, muscle-up, back-tuck, faster-sprint, etc.
+    regressions: jsonb("regressions").$type<string[]>(),
+    prerequisites: jsonb("prerequisites").$type<string[]>(),
+    // Media URLs
     videoUrl: text("video_url"),
     imageUrl: text("image_url"),
+    // AI/ML features
+    embedding: vector("embedding", { dimensions: 1536 }), // For similarity search
+    tags: jsonb("tags").$type<string[]>(),
+    synonyms: jsonb("synonyms").$type<string[]>(), // Alternative names
+    // Sport applications
+    sportApplications: jsonb("sport_applications").$type<string[]>(),
+    // Metadata
+    isActive: boolean("is_active").default(true).notNull(),
     isCustom: boolean("is_custom").default(false).notNull(),
     createdByMemberId: uuid("created_by_member_id").references(
-      () => familyMembers.id,
+      () => circleMembers.id,
       { onDelete: "set null" }
     ),
+    source: text("source").default("system"), // system, free_exercise_db, custom
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (exercise) => [
     index("exercises_category_idx").on(exercise.category),
     index("exercises_name_idx").on(exercise.name),
+    index("exercises_difficulty_idx").on(exercise.difficulty),
+    index("exercises_active_idx").on(exercise.isActive),
+    index("exercises_primary_muscles_idx").using("gin", exercise.muscleGroups),
+    index("exercises_equipment_idx").using("gin", exercise.equipment),
+    index("exercises_tags_idx").using("gin", exercise.tags),
   ]
 );
 
@@ -252,9 +297,9 @@ export const workoutPlans = pgTable(
   "workout_plans",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    familyId: uuid("family_id")
+    circleId: uuid("circle_id")
       .notNull()
-      .references(() => families.id, { onDelete: "cascade" }),
+      .references(() => circles.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
     category: text("category"), // strength, cardio, hiit, mixed, etc.
@@ -262,13 +307,13 @@ export const workoutPlans = pgTable(
     estimatedDuration: integer("estimated_duration"), // in minutes
     aiGenerated: boolean("ai_generated").default(false).notNull(),
     createdByMemberId: uuid("created_by_member_id").references(
-      () => familyMembers.id,
+      () => circleMembers.id,
       { onDelete: "set null" }
     ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (plan) => [index("workout_plans_family_idx").on(plan.familyId)]
+  (plan) => [index("workout_plans_circle_idx").on(plan.circleId)]
 );
 
 export const workoutPlanExercises = pgTable(
@@ -305,7 +350,7 @@ export const workoutSessions = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     memberId: uuid("member_id")
       .notNull()
-      .references(() => familyMembers.id, { onDelete: "cascade" }),
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
     planId: uuid("plan_id").references(() => workoutPlans.id, {
       onDelete: "set null",
     }),
@@ -316,7 +361,6 @@ export const workoutSessions = pgTable(
     status: text("status").default("planned").notNull(), // planned, in_progress, completed
     notes: text("notes"),
     rating: integer("rating"), // 1-5 self rating
-    aiAnalysis: text("ai_analysis"),
     aiFeedback: text("ai_feedback"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -324,6 +368,7 @@ export const workoutSessions = pgTable(
   (session) => [
     index("workout_sessions_member_idx").on(session.memberId),
     index("workout_sessions_date_idx").on(session.date),
+    index("workout_sessions_status_idx").on(session.status),
   ]
 );
 
@@ -373,7 +418,36 @@ export const exerciseSets = pgTable(
 );
 
 // ============================================================================
-// MAX LIFTS / PERSONAL RECORDS
+// MEMBER SKILLS (gymnastics, athletic skills, etc.)
+// ============================================================================
+
+export const memberSkills = pgTable(
+  "member_skills",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
+    name: text("name").notNull(), // back tuck, back handspring, muscle-up, etc.
+    category: text("category").notNull(), // gymnastics, calisthenics, sport, other
+    // Current assessed status
+    currentStatus: text("current_status").default("learning").notNull(), // learning, achieved, mastered
+    currentStatusDate: timestamp("current_status_date").defaultNow(),
+    // All-time best status
+    allTimeBestStatus: text("all_time_best_status").default("learning").notNull(),
+    allTimeBestDate: timestamp("all_time_best_date"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (skill) => [
+    index("member_skills_member_idx").on(skill.memberId),
+    index("member_skills_current_status_idx").on(skill.currentStatus),
+  ]
+);
+
+// ============================================================================
+// PERSONAL RECORDS
 // ============================================================================
 
 export const personalRecords = pgTable(
@@ -382,10 +456,12 @@ export const personalRecords = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     memberId: uuid("member_id")
       .notNull()
-      .references(() => familyMembers.id, { onDelete: "cascade" }),
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
     exerciseId: uuid("exercise_id")
       .notNull()
       .references(() => exercises.id, { onDelete: "cascade" }),
+    // Record type: all_time = best ever, current = current assessed ability
+    recordType: text("record_type").default("current").notNull(), // "all_time" | "current"
     value: real("value").notNull(),
     unit: text("unit").notNull(), // lbs, kg, reps, seconds, meters, etc.
     repMax: integer("rep_max"), // 1RM, 3RM, 5RM, etc.
@@ -399,7 +475,36 @@ export const personalRecords = pgTable(
   (pr) => [
     index("personal_records_member_idx").on(pr.memberId),
     index("personal_records_exercise_idx").on(pr.exerciseId),
+    index("personal_records_type_idx").on(pr.recordType),
     index("personal_records_date_idx").on(pr.date),
+  ]
+);
+
+// ============================================================================
+// CONTEXT NOTES (for AI learning and personalization)
+// ============================================================================
+
+export const contextNotes = pgTable(
+  "context_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
+    entityType: text("entity_type").notNull(), // workout_session, goal, exercise, general, limitation
+    entityId: uuid("entity_id"),
+    mood: text("mood"), // great, good, okay, tired, stressed, motivated, frustrated
+    energyLevel: integer("energy_level"), // 1-5
+    painLevel: integer("pain_level"), // 0-10 (0 = no pain)
+    difficulty: text("difficulty"), // too_easy, just_right, challenging, too_hard
+    content: text("content"),
+    tags: jsonb("tags").$type<string[]>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (note) => [
+    index("context_notes_member_idx").on(note.memberId),
+    index("context_notes_entity_idx").on(note.entityType, note.entityId),
+    index("context_notes_created_idx").on(note.createdAt),
   ]
 );
 
@@ -413,10 +518,10 @@ export const memberEmbeddings = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     memberId: uuid("member_id")
       .notNull()
-      .references(() => familyMembers.id, { onDelete: "cascade" }),
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
     type: text("type").notNull(), // profile, workout_history, goals, preferences
-    content: text("content").notNull(), // The text that was embedded
-    embedding: vector("embedding", { dimensions: 1536 }), // OpenAI embedding
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: 1536 }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -425,42 +530,242 @@ export const memberEmbeddings = pgTable(
 );
 
 // ============================================================================
+// AI COACH CONVERSATIONS & MESSAGES
+// ============================================================================
+
+export const coachConversations = pgTable(
+  "coach_conversations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => circleMembers.id, { onDelete: "cascade" }),
+    mode: text("mode").default("general").notNull(), // general, mental_block, motivation, life_balance, goal_setting, accountability, confidence
+    title: text("title"),
+    context: jsonb("context").$type<{
+      initialTopic?: string;
+      resolvedIssues?: string[];
+      ongoingConcerns?: string[];
+      breakthroughs?: string[];
+      actionItems?: string[];
+    }>(),
+    status: text("status").default("active").notNull(), // active, resolved, archived
+    insights: text("insights"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    lastMessageAt: timestamp("last_message_at").defaultNow().notNull(),
+  },
+  (conv) => [
+    index("coach_conversations_member_idx").on(conv.memberId),
+    index("coach_conversations_mode_idx").on(conv.mode),
+    index("coach_conversations_status_idx").on(conv.status),
+    index("coach_conversations_last_msg_idx").on(conv.lastMessageAt),
+  ]
+);
+
+export const coachMessages = pgTable(
+  "coach_messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => coachConversations.id, { onDelete: "cascade" }),
+    role: text("role").notNull(), // user, assistant
+    content: text("content").notNull(),
+    metadata: jsonb("metadata").$type<{
+      sentiment?: string;
+      topics?: string[];
+      emotionalState?: string;
+      actionableInsights?: string[];
+    }>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (msg) => [
+    index("coach_messages_conversation_idx").on(msg.conversationId),
+    index("coach_messages_created_idx").on(msg.createdAt),
+  ]
+);
+
+// ============================================================================
+// AI CACHING & SNAPSHOTS (for performance)
+// ============================================================================
+
+/**
+ * Pre-computed AI context for fast loading (<100ms target)
+ */
+export const memberContextSnapshot = pgTable(
+  "member_context_snapshot",
+  {
+    memberId: uuid("member_id").primaryKey(),
+    currentWeight: decimal("current_weight", { precision: 5, scale: 2 }),
+    currentBodyFat: decimal("current_body_fat", { precision: 4, scale: 2 }),
+    fitnessLevel: text("fitness_level"),
+    trainingAge: text("training_age"), // beginner, intermediate, advanced
+    activeLimitations: jsonb("active_limitations").$type<
+      Array<{
+        type: string;
+        description: string;
+        severity: string;
+        affectedAreas: string[];
+      }>
+    >(),
+    activeGoals: jsonb("active_goals").$type<
+      Array<{
+        id: string;
+        title: string;
+        category: string;
+        targetValue: number;
+        currentValue: number;
+        progressPercent: number;
+        targetDate: string;
+      }>
+    >(),
+    personalRecords: jsonb("personal_records").$type<
+      Array<{
+        exercise: string;
+        value: number;
+        unit: string;
+        repMax?: number;
+        date: string;
+      }>
+    >(),
+    skills: jsonb("skills").$type<
+      Array<{
+        name: string;
+        status: string;
+        category: string;
+      }>
+    >(),
+    muscleRecoveryStatus: jsonb("muscle_recovery_status").$type<
+      Record<
+        string,
+        {
+          status: string;
+          hoursSinceWorked: number;
+          readyToTrain: boolean;
+        }
+      >
+    >(),
+    weeklyWorkoutAvg: decimal("weekly_workout_avg", { precision: 3, scale: 1 }),
+    preferredWorkoutTime: text("preferred_workout_time"),
+    avgWorkoutDuration: integer("avg_workout_duration"),
+    consecutiveTrainingWeeks: integer("consecutive_training_weeks"),
+    needsDeload: boolean("needs_deload").default(false),
+    avgMood: text("avg_mood"),
+    avgEnergyLevel: decimal("avg_energy_level", { precision: 3, scale: 2 }),
+    avgPainLevel: decimal("avg_pain_level", { precision: 3, scale: 2 }),
+    availableEquipment: jsonb("available_equipment").$type<string[]>(),
+    profileEmbedding: vector("profile_embedding", { dimensions: 1536 }),
+    lastWorkoutDate: timestamp("last_workout_date", { withTimezone: true }),
+    snapshotVersion: integer("snapshot_version").default(1),
+    lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [index("member_context_updated_idx").on(table.lastUpdated)]
+);
+
+/**
+ * AI Response Cache - for caching expensive AI operations
+ */
+export const aiResponseCache = pgTable(
+  "ai_response_cache",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    cacheKey: text("cache_key").notNull(),
+    cacheType: text("cache_type").notNull(), // workout_plan, coaching, analysis, exercise_recommendations
+    contextHash: text("context_hash").notNull(),
+    response: jsonb("response").notNull(),
+    responseText: text("response_text"),
+    modelUsed: text("model_used"),
+    reasoningLevel: text("reasoning_level"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    totalCost: decimal("total_cost", { precision: 8, scale: 6 }),
+    generationTimeMs: integer("generation_time_ms"),
+    hitCount: integer("hit_count").default(0),
+    lastAccessedAt: timestamp("last_accessed_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ai_cache_key_idx").on(table.cacheKey),
+    index("ai_cache_type_idx").on(table.cacheType),
+    index("ai_cache_expires_idx").on(table.expiresAt),
+  ]
+);
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 
-export const usersRelations = relations(users, ({ many }) => ({
-  accounts: many(accounts),
-  sessions: many(sessions),
-  authenticators: many(authenticators),
-  familyMembers: many(familyMembers),
-}));
-
-export const familiesRelations = relations(families, ({ many }) => ({
-  members: many(familyMembers),
+export const circlesRelations = relations(circles, ({ many }) => ({
+  members: many(circleMembers),
   workoutPlans: many(workoutPlans),
+  equipment: many(circleEquipment),
+  invitations: many(circleInvitations),
 }));
 
-export const familyMembersRelations = relations(familyMembers, ({ one, many }) => ({
-  family: one(families, {
-    fields: [familyMembers.familyId],
-    references: [families.id],
+export const circleInvitationsRelations = relations(circleInvitations, ({ one }) => ({
+  circle: one(circles, {
+    fields: [circleInvitations.circleId],
+    references: [circles.id],
   }),
-  user: one(users, {
-    fields: [familyMembers.userId],
-    references: [users.id],
+}));
+
+export const circleMembersRelations = relations(circleMembers, ({ one, many }) => ({
+  circle: one(circles, {
+    fields: [circleMembers.circleId],
+    references: [circles.id],
   }),
   metrics: many(memberMetrics),
   limitations: many(memberLimitations),
   goals: many(goals),
   workoutSessions: many(workoutSessions),
   personalRecords: many(personalRecords),
+  skills: many(memberSkills),
   embeddings: many(memberEmbeddings),
+  contextNotes: many(contextNotes),
+  coachConversations: many(coachConversations),
+}));
+
+export const contextNotesRelations = relations(contextNotes, ({ one }) => ({
+  member: one(circleMembers, {
+    fields: [contextNotes.memberId],
+    references: [circleMembers.id],
+  }),
+}));
+
+export const circleEquipmentRelations = relations(circleEquipment, ({ one }) => ({
+  circle: one(circles, {
+    fields: [circleEquipment.circleId],
+    references: [circles.id],
+  }),
+}));
+
+export const memberMetricsRelations = relations(memberMetrics, ({ one }) => ({
+  member: one(circleMembers, {
+    fields: [memberMetrics.memberId],
+    references: [circleMembers.id],
+  }),
+}));
+
+export const memberLimitationsRelations = relations(memberLimitations, ({ one }) => ({
+  member: one(circleMembers, {
+    fields: [memberLimitations.memberId],
+    references: [circleMembers.id],
+  }),
+}));
+
+export const memberSkillsRelations = relations(memberSkills, ({ one }) => ({
+  member: one(circleMembers, {
+    fields: [memberSkills.memberId],
+    references: [circleMembers.id],
+  }),
 }));
 
 export const goalsRelations = relations(goals, ({ one, many }) => ({
-  member: one(familyMembers, {
+  member: one(circleMembers, {
     fields: [goals.memberId],
-    references: [familyMembers.id],
+    references: [circleMembers.id],
   }),
   milestones: many(milestones),
 }));
@@ -473,9 +778,9 @@ export const milestonesRelations = relations(milestones, ({ one }) => ({
 }));
 
 export const exercisesRelations = relations(exercises, ({ one, many }) => ({
-  createdBy: one(familyMembers, {
+  createdBy: one(circleMembers, {
     fields: [exercises.createdByMemberId],
-    references: [familyMembers.id],
+    references: [circleMembers.id],
   }),
   workoutPlanExercises: many(workoutPlanExercises),
   workoutSessionExercises: many(workoutSessionExercises),
@@ -483,13 +788,13 @@ export const exercisesRelations = relations(exercises, ({ one, many }) => ({
 }));
 
 export const workoutPlansRelations = relations(workoutPlans, ({ one, many }) => ({
-  family: one(families, {
-    fields: [workoutPlans.familyId],
-    references: [families.id],
+  circle: one(circles, {
+    fields: [workoutPlans.circleId],
+    references: [circles.id],
   }),
-  createdBy: one(familyMembers, {
+  createdBy: one(circleMembers, {
     fields: [workoutPlans.createdByMemberId],
-    references: [familyMembers.id],
+    references: [circleMembers.id],
   }),
   exercises: many(workoutPlanExercises),
   sessions: many(workoutSessions),
@@ -512,9 +817,9 @@ export const workoutPlanExercisesRelations = relations(
 export const workoutSessionsRelations = relations(
   workoutSessions,
   ({ one, many }) => ({
-    member: one(familyMembers, {
+    member: one(circleMembers, {
       fields: [workoutSessions.memberId],
-      references: [familyMembers.id],
+      references: [circleMembers.id],
     }),
     plan: one(workoutPlans, {
       fields: [workoutSessions.planId],
@@ -548,9 +853,9 @@ export const exerciseSetsRelations = relations(exerciseSets, ({ one }) => ({
 }));
 
 export const personalRecordsRelations = relations(personalRecords, ({ one }) => ({
-  member: one(familyMembers, {
+  member: one(circleMembers, {
     fields: [personalRecords.memberId],
-    references: [familyMembers.id],
+    references: [circleMembers.id],
   }),
   exercise: one(exercises, {
     fields: [personalRecords.exerciseId],
@@ -563,8 +868,44 @@ export const personalRecordsRelations = relations(personalRecords, ({ one }) => 
 }));
 
 export const memberEmbeddingsRelations = relations(memberEmbeddings, ({ one }) => ({
-  member: one(familyMembers, {
+  member: one(circleMembers, {
     fields: [memberEmbeddings.memberId],
-    references: [familyMembers.id],
+    references: [circleMembers.id],
   }),
 }));
+
+export const coachConversationsRelations = relations(coachConversations, ({ one, many }) => ({
+  member: one(circleMembers, {
+    fields: [coachConversations.memberId],
+    references: [circleMembers.id],
+  }),
+  messages: many(coachMessages),
+}));
+
+export const coachMessagesRelations = relations(coachMessages, ({ one }) => ({
+  conversation: one(coachConversations, {
+    fields: [coachMessages.conversationId],
+    references: [coachConversations.id],
+  }),
+}));
+
+// ============================================================================
+// TYPE EXPORTS
+// ============================================================================
+
+export type Circle = typeof circles.$inferSelect;
+export type NewCircle = typeof circles.$inferInsert;
+export type CircleMember = typeof circleMembers.$inferSelect;
+export type NewCircleMember = typeof circleMembers.$inferInsert;
+export type Exercise = typeof exercises.$inferSelect;
+export type NewExercise = typeof exercises.$inferInsert;
+export type WorkoutSession = typeof workoutSessions.$inferSelect;
+export type NewWorkoutSession = typeof workoutSessions.$inferInsert;
+export type Goal = typeof goals.$inferSelect;
+export type NewGoal = typeof goals.$inferInsert;
+export type PersonalRecord = typeof personalRecords.$inferSelect;
+export type NewPersonalRecord = typeof personalRecords.$inferInsert;
+export type MemberContextSnapshot = typeof memberContextSnapshot.$inferSelect;
+export type AiResponseCache = typeof aiResponseCache.$inferSelect;
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type NewOnboardingProgress = typeof onboardingProgress.$inferInsert;

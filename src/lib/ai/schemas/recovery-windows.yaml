@@ -1,0 +1,332 @@
+# Recovery Windows - Muscle Group Recovery Data
+# Defines recovery times, factors, and recommendations
+
+version: "1.0"
+last_updated: "2025-01-19"
+
+# =============================================================================
+# MUSCLE GROUP RECOVERY TIMES
+# =============================================================================
+muscle_groups:
+  # Large muscle groups - require more recovery
+  chest:
+    base_recovery_hours: 48
+    category: "large"
+    primary_exercises:
+      - "Bench Press"
+      - "Incline Press"
+      - "Push-ups"
+      - "Dumbbell Flyes"
+      - "Cable Crossover"
+    synergists: ["shoulders", "triceps"]
+    notes: "Often limited by shoulder/tricep recovery"
+
+  back:
+    base_recovery_hours: 48
+    category: "large"
+    subcategories:
+      lats:
+        exercises: ["Pull-ups", "Lat Pulldown", "Rows"]
+      upper_back:
+        exercises: ["Face Pulls", "Reverse Flyes", "Shrugs"]
+      lower_back:
+        exercises: ["Deadlift", "Good Mornings", "Back Extensions"]
+        recovery_hours: 72  # Lower back needs more time
+    synergists: ["biceps", "rear_delts"]
+
+  shoulders:
+    base_recovery_hours: 48
+    category: "large"
+    subcategories:
+      anterior:
+        exercises: ["Overhead Press", "Front Raise"]
+        notes: "Often pre-fatigued from chest work"
+      lateral:
+        exercises: ["Lateral Raise", "Upright Row"]
+      posterior:
+        exercises: ["Face Pulls", "Reverse Flyes"]
+        notes: "Often undertrained"
+    synergists: ["triceps", "traps"]
+
+  legs:
+    base_recovery_hours: 72
+    category: "large"
+    subcategories:
+      quadriceps:
+        exercises: ["Squat", "Leg Press", "Lunges", "Leg Extension"]
+        recovery_hours: 72
+      hamstrings:
+        exercises: ["Romanian Deadlift", "Leg Curl", "Good Mornings"]
+        recovery_hours: 72
+      glutes:
+        exercises: ["Hip Thrust", "Deadlift", "Lunges"]
+        recovery_hours: 72
+      calves:
+        exercises: ["Calf Raises", "Seated Calf Raise"]
+        recovery_hours: 48  # Calves recover faster
+    notes: "Leg training is systemically demanding"
+
+  # Medium muscle groups
+  biceps:
+    base_recovery_hours: 48
+    category: "medium"
+    primary_exercises:
+      - "Barbell Curl"
+      - "Dumbbell Curl"
+      - "Hammer Curls"
+      - "Preacher Curls"
+    synergist_of: ["back"]
+    notes: "Often adequately stimulated from back work"
+
+  triceps:
+    base_recovery_hours: 48
+    category: "medium"
+    primary_exercises:
+      - "Tricep Pushdown"
+      - "Skull Crushers"
+      - "Overhead Extension"
+      - "Dips"
+    synergist_of: ["chest", "shoulders"]
+    notes: "Often adequately stimulated from pressing movements"
+
+  # Small/special muscle groups
+  core:
+    base_recovery_hours: 24
+    category: "small"
+    subcategories:
+      abs:
+        exercises: ["Plank", "Crunches", "Leg Raises"]
+        recovery_hours: 24
+      obliques:
+        exercises: ["Russian Twist", "Side Plank", "Wood Chops"]
+        recovery_hours: 24
+      deep_core:
+        exercises: ["Dead Bug", "Pallof Press", "Bird Dog"]
+        recovery_hours: 24
+    notes: "Can be trained frequently due to postural role"
+
+  forearms:
+    base_recovery_hours: 48
+    category: "small"
+    primary_exercises:
+      - "Wrist Curls"
+      - "Reverse Curls"
+      - "Farmer's Walks"
+    notes: "Often trained indirectly through grip work"
+
+  traps:
+    base_recovery_hours: 48
+    category: "medium"
+    primary_exercises:
+      - "Shrugs"
+      - "Face Pulls"
+      - "Upright Rows"
+    synergist_of: ["back", "shoulders"]
+
+# =============================================================================
+# WORKOUT TYPE RECOVERY
+# =============================================================================
+workout_types:
+  full_body:
+    recovery_hours: 48
+    minimum_rest_days: 1
+    max_frequency_per_week: 4
+    notes: "Systemically demanding, needs adequate rest"
+
+  upper_body:
+    recovery_hours: 48
+    muscles_worked: ["chest", "back", "shoulders", "biceps", "triceps"]
+
+  lower_body:
+    recovery_hours: 72
+    muscles_worked: ["quadriceps", "hamstrings", "glutes", "calves"]
+
+  push:
+    recovery_hours: 48
+    muscles_worked: ["chest", "shoulders", "triceps"]
+
+  pull:
+    recovery_hours: 48
+    muscles_worked: ["back", "biceps", "rear_delts"]
+
+  legs:
+    recovery_hours: 72
+    muscles_worked: ["quadriceps", "hamstrings", "glutes", "calves"]
+
+  hiit_conditioning:
+    recovery_hours: 24
+    notes: "Less muscle damage, more metabolic"
+
+  skill_practice:
+    recovery_hours: 24
+    notes: "Low fatigue if not taken to failure"
+
+# =============================================================================
+# RECOVERY MODIFIERS
+# =============================================================================
+modifiers:
+  # Factors that INCREASE recovery time
+  increases_recovery:
+    high_volume:
+      description: ">20 sets for a muscle group"
+      multiplier: 1.25
+
+    training_to_failure:
+      description: "Sets taken to muscular failure"
+      multiplier: 1.3
+
+    eccentric_emphasis:
+      description: "Slow negatives, emphasizing stretch"
+      multiplier: 1.4
+
+    novel_stimulus:
+      description: "New exercises or patterns"
+      multiplier: 1.2
+
+    poor_sleep:
+      description: "<6 hours or poor quality"
+      multiplier: 1.5
+
+    high_stress:
+      description: "Life stress affects recovery"
+      multiplier: 1.3
+
+    caloric_deficit:
+      description: "Eating below maintenance"
+      multiplier: 1.3
+
+    age_over_40:
+      description: "Recovery slows with age"
+      multiplier: 1.2
+
+    dehydration:
+      description: "Inadequate water intake"
+      multiplier: 1.2
+
+  # Factors that DECREASE recovery time
+  decreases_recovery:
+    good_sleep:
+      description: "7-9 hours quality sleep"
+      multiplier: 0.9
+
+    active_recovery:
+      description: "Light movement, stretching"
+      multiplier: 0.9
+
+    optimal_nutrition:
+      description: "Adequate protein, calories"
+      multiplier: 0.85
+
+    experienced_lifter:
+      description: "2+ years consistent training"
+      multiplier: 0.85
+
+    low_volume:
+      description: "<10 sets for a muscle group"
+      multiplier: 0.8
+
+    youth:
+      description: "Under 25 years old"
+      multiplier: 0.85
+
+# =============================================================================
+# RECOVERY STATUS DETERMINATION
+# =============================================================================
+status_logic:
+  fully_recovered:
+    hours_since_worked: ">= base_recovery_hours"
+    status: "ready_to_train"
+    recommendation: "Can train this muscle group"
+    color: "green"
+
+  mostly_recovered:
+    hours_since_worked: ">= base_recovery_hours * 0.75"
+    status: "can_train_light"
+    recommendation: "Light work okay, avoid heavy volume"
+    color: "yellow"
+
+  still_recovering:
+    hours_since_worked: "< base_recovery_hours * 0.75"
+    status: "needs_rest"
+    recommendation: "Avoid direct work on this muscle"
+    color: "red"
+
+  acute_doms:
+    hours_since_worked: "< 24"
+    status: "peak_doms"
+    recommendation: "Rest or very light movement only"
+    color: "red"
+
+# =============================================================================
+# SORENESS vs RECOVERY
+# =============================================================================
+soreness_guidance:
+  important_note: "Soreness ≠ Recovery status"
+
+  doms_timeline:
+    onset: "12-24 hours post-workout"
+    peak: "24-72 hours post-workout"
+    resolution: "3-7 days"
+
+  training_through_soreness:
+    mild_soreness: # 1-3/10
+      can_train: true
+      recommendation: "Warmup thoroughly, proceed normally"
+
+    moderate_soreness: # 4-6/10
+      can_train: true
+      recommendation: "Extended warmup, may need to reduce intensity"
+
+    severe_soreness: # 7-10/10
+      can_train: false
+      recommendation: "Active recovery only, wait for DOMS to subside"
+
+  when_to_worry:
+    - "Sharp or localized pain (not general soreness)"
+    - "Soreness that doesn't improve after 7 days"
+    - "Swelling or bruising"
+    - "Pain that affects daily activities"
+
+# =============================================================================
+# PRACTICAL SCHEDULES
+# =============================================================================
+example_schedules:
+  beginner_3x:
+    description: "Full body 3x per week"
+    pattern: ["Mon: Full Body", "Wed: Full Body", "Fri: Full Body"]
+    rest_days: ["Tue", "Thu", "Sat", "Sun"]
+    recovery_notes: "48+ hours between sessions"
+
+  intermediate_4x:
+    description: "Upper/Lower 4x per week"
+    pattern:
+      - "Mon: Upper"
+      - "Tue: Lower"
+      - "Wed: Rest"
+      - "Thu: Upper"
+      - "Fri: Lower"
+      - "Sat-Sun: Rest"
+    recovery_notes: "Each muscle group hit 2x/week with adequate rest"
+
+  advanced_6x:
+    description: "Push/Pull/Legs 6x per week"
+    pattern:
+      - "Mon: Push"
+      - "Tue: Pull"
+      - "Wed: Legs"
+      - "Thu: Push"
+      - "Fri: Pull"
+      - "Sat: Legs"
+      - "Sun: Rest"
+    recovery_notes: "High frequency, requires good recovery practices"
+
+  hybrid_5x:
+    description: "Upper/Lower + Full Body"
+    pattern:
+      - "Mon: Upper (heavy)"
+      - "Tue: Lower (heavy)"
+      - "Wed: Rest or Cardio"
+      - "Thu: Upper (light/pump)"
+      - "Fri: Lower (light/pump)"
+      - "Sat: Full Body (moderate)"
+      - "Sun: Rest"

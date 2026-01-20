@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     const plans = await db.query.workoutPlans.findMany({
-      where: eq(workoutPlans.familyId, session.familyId),
+      where: eq(workoutPlans.circleId, session.circleId),
       with: {
         exercises: true,
       },
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     const [plan] = await db
       .insert(workoutPlans)
       .values({
-        familyId: session.familyId,
+        circleId: session.circleId,
         name,
         description,
         category,

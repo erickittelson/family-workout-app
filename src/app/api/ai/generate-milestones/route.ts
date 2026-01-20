@@ -1,18 +1,20 @@
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { goals, milestones, familyMembers } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { getMemberContext, buildSystemPrompt } from "@/lib/ai";
+import { goals, milestones } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { getMemberContext, buildSystemPrompt, aiModel, getTaskOptions } from "@/lib/ai";
+
+export const runtime = "nodejs";
+export const maxDuration = 60; // 1 minute for milestone generation
 
 const milestonesSchema = z.object({
   milestones: z.array(
     z.object({
       title: z.string().describe("Short title for the milestone"),
       description: z.string().describe("Detailed description of what to achieve"),
-      targetValue: z.number().optional().describe("Numeric target if applicable"),
+      targetValue: z.number().nullable().describe("Numeric target if applicable, or null if not applicable"),
       weekNumber: z.number().describe("Which week to target this milestone"),
     })
   ),
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
       return new Response("Goal not found", { status: 404 });
     }
 
-    if (goal.member.familyId !== session.familyId) {
+    if (goal.member.circleId !== session.circleId) {
       return new Response("Unauthorized", { status: 401 });
     }
 
@@ -74,7 +76,7 @@ Create progressive milestones that build up to the final goal. Each milestone sh
 Consider the person's current fitness level, limitations, and recent progress when setting milestone targets.`;
 
     const result = await generateObject({
-      model: openai("gpt-4o"),
+      model: aiModel,
       schema: milestonesSchema,
       system: systemPrompt,
       prompt,
@@ -105,6 +107,10 @@ Consider the person's current fitness level, limitations, and recent progress wh
     });
   } catch (error) {
     console.error("Error generating milestones:", error);
-    return new Response("Failed to generate milestones", { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return Response.json(
+      { error: "Failed to generate milestones", details: errorMessage },
+      { status: 500 }
+    );
   }
 }

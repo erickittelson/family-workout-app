@@ -1,0 +1,128 @@
+# Workouts Domain
+# Covers workout logging, planning, and session management
+
+domain: workouts
+version: "1.0.0"
+description: "Workout logging, planning, and session management"
+
+# Core concepts for this domain
+concepts:
+  workout_session:
+    description: "A single training session logged by a member"
+    synonyms: [workout, training, session, lift, gym session]
+    states:
+      - planned: "Scheduled but not started"
+      - in_progress: "Currently being performed"
+      - completed: "Finished and logged"
+
+  workout_plan:
+    description: "A reusable workout template with exercises"
+    synonyms: [program, routine, template, plan]
+
+  exercise_set:
+    description: "A single set of an exercise with reps/weight/duration"
+    synonyms: [set, round]
+
+# User intents this domain handles
+intents:
+  log_workout:
+    description: "User wants to log a completed workout"
+    examples:
+      - "I just did 3x10 bench press at 185"
+      - "Log my workout from this morning"
+      - "I completed today's leg day"
+    required_data: [exercises, sets_reps_weight]
+    optional_data: [duration, rpe, notes]
+
+  start_workout:
+    description: "User wants to start a workout session"
+    examples:
+      - "Start my push day"
+      - "Let's begin today's workout"
+      - "I'm ready to train"
+    required_data: [workout_plan_or_type]
+
+  generate_workout:
+    description: "User wants AI to generate a workout plan"
+    examples:
+      - "Create a workout for me"
+      - "What should I do today?"
+      - "Generate a leg workout"
+    required_data: [target_muscles_or_type]
+    optional_data: [duration, equipment, intensity]
+
+  view_history:
+    description: "User wants to see past workouts"
+    examples:
+      - "Show me my recent workouts"
+      - "What did I do last week?"
+      - "My workout history"
+
+# Query patterns for Neon database
+query_patterns:
+  recent_sessions:
+    description: "Get member's recent workout sessions"
+    sql: |
+      SELECT ws.*, COUNT(wse.id) as exercise_count
+      FROM workout_sessions ws
+      LEFT JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      WHERE ws.member_id = $1
+        AND ws.status = 'completed'
+      GROUP BY ws.id
+      ORDER BY ws.date DESC
+      LIMIT $2
+
+  session_details:
+    description: "Get full session with exercises and sets"
+    sql: |
+      SELECT ws.*,
+        json_agg(
+          json_build_object(
+            'exercise', e.name,
+            'sets', (
+              SELECT json_agg(
+                json_build_object(
+                  'reps', es.actual_reps,
+                  'weight', es.actual_weight,
+                  'rpe', es.rpe
+                ) ORDER BY es.set_number
+              )
+              FROM exercise_sets es
+              WHERE es.session_exercise_id = wse.id
+            )
+          ) ORDER BY wse.order
+        ) as exercises
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercises e ON wse.exercise_id = e.id
+      WHERE ws.id = $1
+      GROUP BY ws.id
+
+  weekly_volume:
+    description: "Calculate weekly training volume per muscle group"
+    sql: |
+      SELECT
+        e.muscle_groups as muscles,
+        SUM(es.actual_reps * es.actual_weight) as total_volume,
+        COUNT(DISTINCT ws.id) as sessions
+      FROM workout_sessions ws
+      JOIN workout_session_exercises wse ON ws.id = wse.session_id
+      JOIN exercises e ON wse.exercise_id = e.id
+      JOIN exercise_sets es ON wse.id = es.session_exercise_id
+      WHERE ws.member_id = $1
+        AND ws.date >= NOW() - INTERVAL '7 days'
+        AND es.completed = true
+      GROUP BY e.muscle_groups
+
+# Response templates
+response_templates:
+  workout_logged:
+    template: "Great workout! You completed {exercise_count} exercises with {total_sets} sets. {feedback}"
+
+  workout_started:
+    template: "Let's crush this {workout_type}! You have {exercise_count} exercises planned. Ready when you are."
+
+# Feature introductions (for onboarding)
+feature_intro: |
+  I can help you track every rep and set. After workouts, I'll give you
+  insights on your volume, intensity, and what muscles need attention next.

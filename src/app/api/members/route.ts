@@ -1,32 +1,51 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/neon-auth";
 import { db } from "@/lib/db";
-import { familyMembers, memberMetrics } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { circleMembers, memberMetrics, memberLimitations } from "@/lib/db/schema";
+import { eq, desc, and, inArray } from "drizzle-orm";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await auth();
-    if (!session) {
+    const session = await getSession();
+    if (!session?.activeCircle) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const members = await db.query.familyMembers.findMany({
-      where: eq(familyMembers.familyId, session.familyId),
+    const circleId = session.activeCircle.id;
+
+    // Check for specific member IDs filter
+    const { searchParams } = new URL(request.url);
+    const memberIds = searchParams.getAll("ids");
+
+    // Build where clause - always filter by circle, optionally by specific IDs
+    const whereClause = memberIds.length > 0
+      ? and(
+          eq(circleMembers.circleId, circleId),
+          inArray(circleMembers.id, memberIds)
+        )
+      : eq(circleMembers.circleId, circleId);
+
+    const members = await db.query.circleMembers.findMany({
+      where: whereClause,
       with: {
         metrics: {
           orderBy: (metrics, { desc }) => [desc(metrics.date)],
           limit: 1,
         },
+        limitations: {
+          where: eq(memberLimitations.active, true),
+        },
+        goals: true,
       },
     });
 
     const formattedMembers = members.map((member) => ({
       id: member.id,
       name: member.name,
-      avatar: member.avatar,
+      profilePicture: member.profilePicture,
       dateOfBirth: member.dateOfBirth?.toISOString().split("T")[0],
       gender: member.gender,
+      role: member.role,
       latestMetrics: member.metrics[0]
         ? {
             weight: member.metrics[0].weight,
@@ -35,6 +54,20 @@ export async function GET() {
             fitnessLevel: member.metrics[0].fitnessLevel,
           }
         : null,
+      limitations: member.limitations.map((l) => ({
+        id: l.id,
+        type: l.type,
+        description: l.description,
+        affectedAreas: l.affectedAreas,
+        severity: l.severity,
+        active: l.active,
+      })),
+      goals: member.goals.map((g) => ({
+        id: g.id,
+        title: g.title,
+        category: g.category,
+        status: g.status,
+      })),
     }));
 
     return NextResponse.json(formattedMembers);
@@ -49,13 +82,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session) {
+    const session = await getSession();
+    if (!session?.activeCircle) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { name, dateOfBirth, gender, metrics } = body;
+    const { name, dateOfBirth, gender, metrics, profilePicture } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -63,12 +96,13 @@ export async function POST(request: Request) {
 
     // Create the member
     const [member] = await db
-      .insert(familyMembers)
+      .insert(circleMembers)
       .values({
-        familyId: session.familyId,
+        circleId: session.activeCircle.id,
         name,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         gender,
+        profilePicture,
       })
       .returning();
 

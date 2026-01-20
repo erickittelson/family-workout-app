@@ -1,0 +1,161 @@
+# Adherence Metrics
+# Workout consistency and habit tracking
+
+metric: adherence
+version: "1.0.0"
+description: "Measures workout consistency and habit formation"
+
+# Key metrics
+definitions:
+  weekly_frequency:
+    description: "Workouts completed per week"
+    formula: |
+      SELECT COUNT(*)
+      FROM workout_sessions
+      WHERE member_id = $1
+        AND status = 'completed'
+        AND date >= DATE_TRUNC('week', NOW())
+    unit: "sessions"
+    target_range: [3, 6]
+    interpretation:
+      low: "< 2 sessions/week - building habit"
+      optimal: "3-5 sessions/week - good consistency"
+      high: "> 6 sessions/week - watch for overtraining"
+
+  adherence_rate:
+    description: "Planned vs completed workout ratio"
+    formula: |
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'completed') * 100.0 /
+        NULLIF(COUNT(*), 0) as rate
+      FROM workout_sessions
+      WHERE member_id = $1
+        AND date >= NOW() - INTERVAL '30 days'
+    unit: "percent"
+    target_range: [75, 100]
+    interpretation:
+      low: "< 60% - needs more realistic planning"
+      moderate: "60-80% - room for improvement"
+      high: "> 80% - excellent consistency"
+
+  current_streak:
+    description: "Consecutive weeks with 3+ workouts"
+    formula: |
+      WITH weekly_counts AS (
+        SELECT DATE_TRUNC('week', date) as week,
+               COUNT(*) as sessions
+        FROM workout_sessions
+        WHERE member_id = $1 AND status = 'completed'
+        GROUP BY DATE_TRUNC('week', date)
+      ),
+      streak AS (
+        SELECT week, sessions,
+               SUM(CASE WHEN sessions >= 3 THEN 0 ELSE 1 END)
+               OVER (ORDER BY week DESC) as break_group
+        FROM weekly_counts
+      )
+      SELECT COUNT(*) as streak_weeks
+      FROM streak
+      WHERE break_group = 0 AND sessions >= 3
+    unit: "weeks"
+
+  days_since_workout:
+    description: "Days since last completed workout"
+    formula: |
+      SELECT EXTRACT(DAY FROM NOW() - MAX(date))
+      FROM workout_sessions
+      WHERE member_id = $1 AND status = 'completed'
+    unit: "days"
+    thresholds:
+      warning: 4
+      concern: 7
+
+  training_consistency_score:
+    description: "Rolling 4-week consistency score"
+    formula: |
+      WITH weekly_data AS (
+        SELECT
+          DATE_TRUNC('week', date) as week,
+          COUNT(*) as sessions
+        FROM workout_sessions
+        WHERE member_id = $1
+          AND status = 'completed'
+          AND date >= NOW() - INTERVAL '4 weeks'
+        GROUP BY DATE_TRUNC('week', date)
+      )
+      SELECT
+        AVG(sessions) as avg_weekly,
+        STDDEV(sessions) as variance,
+        COUNT(*) as weeks_with_activity
+      FROM weekly_data
+    interpretation: "Higher avg with lower variance = more consistent"
+
+# Analysis patterns
+analysis:
+  trend_detection:
+    description: "Detect changes in training frequency"
+    compare_periods:
+      - this_week vs last_week
+      - this_month vs last_month
+      - last_30_days vs previous_30_days
+
+  dropout_risk:
+    description: "Identify members at risk of quitting"
+    indicators:
+      - "Decreasing frequency over 3+ weeks"
+      - "Longer gaps between sessions"
+      - "More skipped/abandoned workouts"
+
+  habit_formation:
+    description: "Track habit strength"
+    milestones:
+      - "2 weeks consistent - habit forming"
+      - "6 weeks consistent - habit established"
+      - "12 weeks consistent - habit solidified"
+
+# Query examples
+examples:
+  - question: "How consistent am I?"
+    sql: |
+      SELECT
+        COUNT(*) FILTER (WHERE date >= NOW() - INTERVAL '7 days') as this_week,
+        COUNT(*) FILTER (WHERE date >= NOW() - INTERVAL '30 days') as last_30_days,
+        AVG(EXTRACT(DAY FROM lead_date - date)) as avg_gap_days
+      FROM (
+        SELECT date, LEAD(date) OVER (ORDER BY date) as lead_date
+        FROM workout_sessions
+        WHERE member_id = $1 AND status = 'completed'
+      ) t
+
+  - question: "What's my workout streak?"
+    sql: |
+      WITH workout_days AS (
+        SELECT DATE(date) as day
+        FROM workout_sessions
+        WHERE member_id = $1 AND status = 'completed'
+      ),
+      gaps AS (
+        SELECT day, day - LAG(day) OVER (ORDER BY day) as gap
+        FROM workout_days
+      )
+      SELECT COUNT(*) as streak_days
+      FROM (
+        SELECT day, SUM(CASE WHEN gap > 3 THEN 1 ELSE 0 END)
+               OVER (ORDER BY day DESC) as break_group
+        FROM gaps
+      ) t
+      WHERE break_group = 0
+
+# Insight templates
+insights:
+  streak_celebration:
+    condition: "streak_weeks >= 4"
+    template: "You've been training consistently for {streak_weeks} weeks! That's real dedication showing up."
+
+  comeback_encouragement:
+    condition: "days_since_workout between 4 and 7"
+    template: "It's been {days} days since your last workout. Ready to get back at it?"
+
+  consistency_praise:
+    condition: "adherence_rate >= 85"
+    template: "Your {rate}% completion rate this month is impressive. Consistency is the key to progress."

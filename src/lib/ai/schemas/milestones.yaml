@@ -1,0 +1,851 @@
+# Milestones - Goal Templates and Progression Patterns
+# Defines how to break goals into achievable milestones
+
+version: "1.0"
+last_updated: "2025-01-19"
+
+# =============================================================================
+# MILESTONE GENERATION PRINCIPLES
+# =============================================================================
+principles:
+  progressive:
+    description: "Each milestone builds on the previous"
+    rule: "No milestone should require skills not developed in prior milestones"
+
+  achievable:
+    description: "Milestones should feel challenging but possible"
+    rule: "80%+ of people should be able to hit each milestone with effort"
+
+  measurable:
+    description: "Clear success criteria"
+    rule: "Every milestone has a specific, verifiable target"
+
+  time_bounded:
+    description: "Deadlines create accountability"
+    rule: "Each milestone has an expected completion timeframe"
+
+  celebratory:
+    description: "Each milestone is worth celebrating"
+    rule: "Name milestones in an encouraging way"
+
+# =============================================================================
+# STRENGTH GOAL TEMPLATES
+# =============================================================================
+strength_goals:
+  bench_press_target:
+    description: "Achieve a specific bench press max"
+    typical_timeframes:
+      beginner_to_bodyweight: "3-6 months"
+      bodyweight_to_1_5x: "6-12 months"
+      above_1_5x: "12+ months"
+
+    milestone_pattern:
+      type: "linear_progression"
+      increment_logic:
+        small_gap: # <20 lbs to goal
+          milestones: 3
+          increment: "~5-7 lbs each"
+        medium_gap: # 20-50 lbs to goal
+          milestones: 5
+          increment: "~10 lbs each"
+        large_gap: # >50 lbs to goal
+          milestones: 6
+          increment: "~15% of gap each"
+
+    milestone_names:
+      - "Foundation Set"
+      - "Building Momentum"
+      - "Halfway Hero"
+      - "Final Push"
+      - "Goal Achieved!"
+
+    supporting_work:
+      - "Accessory exercises (incline, dips, triceps)"
+      - "Technique refinement"
+      - "Progressive overload tracking"
+
+  squat_target:
+    description: "Achieve a specific squat max"
+    typical_timeframes:
+      beginner_to_bodyweight: "2-4 months"
+      bodyweight_to_1_5x: "6-12 months"
+      above_2x: "18+ months"
+
+    milestone_pattern:
+      type: "linear_progression"
+      increment_logic:
+        small_gap:
+          milestones: 3
+          increment: "~10 lbs each"
+        medium_gap:
+          milestones: 5
+          increment: "~15 lbs each"
+        large_gap:
+          milestones: 6
+          increment: "~15% of gap each"
+
+    milestone_names:
+      - "Squat Foundation"
+      - "Depth Mastery"
+      - "Strength Building"
+      - "Heavy Territory"
+      - "Goal Crushed!"
+
+  deadlift_target:
+    description: "Achieve a specific deadlift max"
+    milestone_pattern:
+      type: "linear_progression"
+      note: "Deadlift typically progresses faster than other lifts"
+
+  bodyweight_reps:
+    description: "Achieve rep target for bodyweight exercise"
+    examples: ["10 pull-ups", "50 push-ups", "20 dips"]
+
+    milestone_pattern:
+      type: "rep_progression"
+      strategy: "grease the groove + progressive sets"
+
+    milestone_example_pullups_10:
+      current: 0
+      target: 10
+      milestones:
+        - name: "First Rep"
+          target: 1
+          week: 2
+          notes: "Use band assistance, negatives, or rows to build"
+        - name: "Triple Threat"
+          target: 3
+          week: 4
+          notes: "Focus on quality reps"
+        - name: "Halfway There"
+          target: 5
+          week: 6
+          notes: "You're officially not a beginner!"
+        - name: "Lucky Seven"
+          target: 7
+          week: 8
+          notes: "Single digits, multiple reps"
+        - name: "Double Digits"
+          target: 10
+          week: 10
+          notes: "Goal achieved!"
+
+# =============================================================================
+# CARDIO GOAL TEMPLATES
+# =============================================================================
+cardio_goals:
+  run_distance:
+    description: "Complete a specific running distance"
+
+    common_targets:
+      5k:
+        beginner_timeline: "8-12 weeks"
+        milestone_pattern: "couch_to_5k"
+
+      10k:
+        beginner_timeline: "12-16 weeks (from 5k)"
+        milestone_pattern: "distance_buildup"
+
+      half_marathon:
+        timeline: "12-20 weeks (from 10k)"
+        milestone_pattern: "long_run_progression"
+
+      marathon:
+        timeline: "16-24 weeks (from half)"
+        milestone_pattern: "marathon_prep"
+
+    milestone_pattern_couch_to_5k:
+      weeks: 8
+      milestones:
+        - name: "First Steps"
+          week: 1
+          target: "Run 1 minute, walk 2 minutes × 8"
+        - name: "Building Base"
+          week: 2
+          target: "Run 2 minutes, walk 1 minute × 6"
+        - name: "Finding Rhythm"
+          week: 4
+          target: "Run 5 minutes continuous"
+        - name: "Half Mile Hero"
+          week: 5
+          target: "Run 10 minutes continuous"
+        - name: "One Mile Down"
+          week: 6
+          target: "Run 1 mile without stopping"
+        - name: "Two Mile Triumph"
+          week: 7
+          target: "Run 2 miles continuous"
+        - name: "5K Complete!"
+          week: 8
+          target: "Run 3.1 miles (5K)"
+
+  run_time:
+    description: "Achieve a specific time for a distance"
+
+    milestone_pattern:
+      type: "time_reduction"
+      strategy: "mix of easy runs, tempo runs, and intervals"
+
+    milestone_example_sub_30_5k:
+      current_time: "35:00"
+      target_time: "30:00"
+      gap_seconds: 300
+      milestones:
+        - name: "Consistent Base"
+          target: "34:00"
+          week: 3
+          notes: "Focus on easy, consistent running"
+        - name: "Breaking 33"
+          target: "33:00"
+          week: 5
+          notes: "Add one tempo run per week"
+        - name: "32 Minute Mark"
+          target: "32:00"
+          week: 7
+          notes: "Introduce interval training"
+        - name: "Sub-31"
+          target: "31:00"
+          week: 9
+          notes: "Race simulation runs"
+        - name: "Sub-30 Success!"
+          target: "30:00"
+          week: 11
+          notes: "Goal achieved!"
+
+  rowing_target:
+    description: "Rowing distance or pace goals"
+    common_targets:
+      2k_test:
+        beginner: ">9:00"
+        intermediate: "7:30-8:30"
+        advanced: "<7:00"
+      500m_pace:
+        metric: "split time"
+
+# =============================================================================
+# SKILL GOAL TEMPLATES
+# =============================================================================
+skill_goals:
+  gymnastics_skill:
+    description: "Achieve a bodyweight skill"
+
+    skills:
+      muscle_up:
+        prerequisites:
+          - "10+ strict pull-ups"
+          - "10+ chest-to-bar pull-ups"
+          - "10+ straight bar dips"
+        progression_milestones:
+          - name: "Pull-up Power"
+            target: "10 strict pull-ups"
+          - name: "Explosive Pulls"
+            target: "5 chest-to-bar pull-ups"
+          - name: "Transition Training"
+            target: "Band-assisted muscle-ups"
+          - name: "Kipping Control"
+            target: "3 kipping muscle-ups"
+          - name: "Strict Achievement"
+            target: "1 strict muscle-up"
+
+      handstand:
+        phases:
+          balance:
+            milestones:
+              - "30s wall handstand"
+              - "Wall handstand toe taps"
+              - "15s freestanding"
+              - "30s freestanding"
+          walking:
+            milestones:
+              - "10ft wall walk"
+              - "5ft freestanding walk"
+              - "25ft freestanding walk"
+
+      pistol_squat:
+        progression_milestones:
+          - name: "Assisted Pistol"
+            target: "5 each leg with support"
+          - name: "Box Pistol"
+            target: "5 each leg to elevated surface"
+          - name: "Negative Control"
+            target: "Controlled descent, assisted up"
+          - name: "First Rep"
+            target: "1 unassisted each leg"
+          - name: "Pistol Master"
+            target: "5 each leg unassisted"
+
+      double_unders:
+        progression_milestones:
+          - name: "Single Under Master"
+            target: "100 unbroken single unders"
+          - name: "First Double"
+            target: "1 double under"
+          - name: "String of 5"
+            target: "5 consecutive double unders"
+          - name: "Set of 20"
+            target: "20 consecutive double unders"
+          - name: "DU Proficient"
+            target: "50 unbroken double unders"
+
+# =============================================================================
+# BODY COMPOSITION TEMPLATES
+# =============================================================================
+body_composition_goals:
+  weight_loss:
+    description: "Reduce body weight"
+    safe_rate: "0.5-1% body weight per week"
+    max_rate: "2 lbs per week"
+
+    milestone_pattern:
+      type: "percentage_based"
+      milestone_frequency: "every 5% of total goal"
+
+    milestone_example:
+      current_weight: 200
+      target_weight: 175
+      total_loss: 25
+      milestones:
+        - name: "First 5 Down"
+          target: 195
+          notes: "Building habits, water weight drops"
+        - name: "10 Pound Club"
+          target: 190
+          notes: "Real progress, clothes fitting differently"
+        - name: "Halfway There"
+          target: 187.5
+          notes: "Celebrate! Adjust calories if needed"
+        - name: "20 Pounds Gone"
+          target: 180
+          notes: "Major transformation visible"
+        - name: "Goal Weight!"
+          target: 175
+          notes: "Transition to maintenance"
+
+    supporting_milestones:
+      - "Establish calorie tracking habit (week 1)"
+      - "3 consistent workout weeks"
+      - "First non-scale victory (clothes fit better)"
+      - "First compliment received"
+
+  muscle_gain:
+    description: "Increase lean body mass"
+    realistic_rate: "0.5-1 lb per month for experienced"
+    beginner_rate: "1-2 lbs per month"
+
+    milestone_pattern:
+      type: "strength_and_weight_combined"
+      note: "Strength gains often precede visible size"
+
+# =============================================================================
+# CONSISTENCY GOAL TEMPLATES
+# =============================================================================
+consistency_goals:
+  workout_frequency:
+    description: "Establish regular workout habit"
+
+    milestone_example_3x_week:
+      target: "3 workouts per week consistently"
+      milestones:
+        - name: "Week One Win"
+          target: "Complete 3 workouts this week"
+          week: 1
+        - name: "Two Week Streak"
+          target: "3 workouts/week for 2 consecutive weeks"
+          week: 2
+        - name: "Month of Momentum"
+          target: "3 workouts/week for 4 consecutive weeks"
+          week: 4
+        - name: "Habit Formed"
+          target: "3 workouts/week for 8 consecutive weeks"
+          week: 8
+        - name: "Lifestyle Locked"
+          target: "3 workouts/week for 12 consecutive weeks"
+          week: 12
+
+  streak_goals:
+    description: "Maintain consecutive workout days/weeks"
+    milestone_pattern:
+      - "7 day streak"
+      - "14 day streak"
+      - "30 day streak"
+      - "60 day streak"
+      - "90 day streak"
+      - "180 day streak"
+      - "365 day streak"
+
+# =============================================================================
+# MILESTONE GENERATION LOGIC
+# =============================================================================
+generation_logic:
+  determine_milestones:
+    inputs:
+      - current_value: "Where they are now"
+      - target_value: "Where they want to be"
+      - target_date: "When they want to achieve it"
+      - goal_category: "strength/cardio/skill/weight/flexibility/endurance"
+
+    process:
+      1_calculate_gap: "target - current"
+      2_determine_timeframe: "weeks until target date"
+      3_select_template: "match goal_category to templates above"
+      4_calculate_increments: "gap / milestone_count"
+      5_assign_dates: "spread milestones across timeframe"
+      6_name_milestones: "use encouraging, celebratory names"
+      7_add_supporting_notes: "include tips for each phase"
+
+  milestone_count_rules:
+    tiny_goal: # <4 weeks
+      milestones: [2, 3]
+    short_goal: # 4-8 weeks
+      milestones: [3, 5]
+    medium_goal: # 8-16 weeks
+      milestones: [4, 6]
+    long_goal: # 16+ weeks
+      milestones: [5, 8]
+
+  celebration_triggers:
+    - "Milestone completed"
+    - "Ahead of schedule"
+    - "Streak maintained"
+    - "Non-scale victory"
+    - "PR achieved (even if not goal)"
+
+# =============================================================================
+# POWERLIFTING MILESTONES
+# =============================================================================
+powerlifting_goals:
+  total_goals:
+    description: "Combined squat + bench + deadlift"
+
+    classification_male:
+      # Approximate Wilks-adjusted standards
+      novice:
+        description: "First year of serious training"
+        example_at_181: "700-900 lbs total"
+      intermediate:
+        description: "1-3 years of training"
+        example_at_181: "900-1100 lbs total"
+      advanced:
+        description: "3-5 years of training"
+        example_at_181: "1100-1300 lbs total"
+      elite:
+        description: "5+ years, competitive level"
+        example_at_181: "1300+ lbs total"
+
+    classification_female:
+      novice:
+        example_at_132: "300-450 lbs total"
+      intermediate:
+        example_at_132: "450-600 lbs total"
+      advanced:
+        example_at_132: "600-750 lbs total"
+      elite:
+        example_at_132: "750+ lbs total"
+
+  strength_standards:
+    description: "Relative strength benchmarks (weight / bodyweight)"
+
+    squat:
+      beginner: 0.75
+      novice: 1.0
+      intermediate: 1.5
+      advanced: 2.0
+      elite: 2.5
+
+    bench_press:
+      beginner: 0.5
+      novice: 0.75
+      intermediate: 1.0
+      advanced: 1.5
+      elite: 2.0
+
+    deadlift:
+      beginner: 1.0
+      novice: 1.25
+      intermediate: 1.75
+      advanced: 2.25
+      elite: 2.75
+
+  milestone_example_1000lb_total:
+    current: 750
+    target: 1000
+    timeline: "6-9 months"
+    milestones:
+      - name: "800 Club"
+        target: 800
+        focus: "Establish consistent training"
+      - name: "Breaking 850"
+        target: 850
+        focus: "Refine technique"
+      - name: "900 Barrier"
+        target: 900
+        focus: "Address weak points"
+      - name: "950 Push"
+        target: 950
+        focus: "Peak preparation"
+      - name: "1000 Pound Club!"
+        target: 1000
+        focus: "Competition or test day"
+
+# =============================================================================
+# BODYBUILDING / AESTHETICS MILESTONES
+# =============================================================================
+aesthetics_goals:
+  measurement_goals:
+    description: "Progress measured by body composition, not just scale"
+
+    metrics_to_track:
+      - "Body fat percentage"
+      - "Lean body mass"
+      - "Key circumference measurements"
+      - "Progress photos (monthly)"
+      - "Strength on key lifts"
+
+  body_recomposition:
+    description: "Lose fat while gaining muscle"
+    realistic_timeline: "3-6 months for visible changes"
+
+    milestones:
+      - name: "Habit Formation"
+        week: 2
+        target: "Consistent nutrition and training"
+      - name: "Initial Changes"
+        week: 6
+        target: "Clothes fitting differently, slight visible changes"
+      - name: "Visible Progress"
+        week: 12
+        target: "Clear visual improvement in photos"
+      - name: "Significant Transformation"
+        week: 24
+        target: "Major visible change, strength gains"
+
+  lean_bulk:
+    description: "Maximize muscle gain with minimal fat"
+    rate: "0.5-1 lb per week bodyweight gain"
+
+    milestones:
+      monthly:
+        target: "2-4 lbs gained, strength increasing"
+        check: "If gaining >4 lbs/month, reduce calories slightly"
+
+  cutting:
+    description: "Reduce body fat while preserving muscle"
+    rate: "0.5-1% bodyweight per week"
+
+    milestone_example_12_week_cut:
+      milestones:
+        - name: "Week 3 Check"
+          target: "3-4 lbs down, strength maintained"
+        - name: "Halfway Point"
+          target: "6-8 lbs down, energy good"
+        - name: "Week 9 Push"
+          target: "10-12 lbs down, diet fatigue setting in"
+        - name: "Final Week"
+          target: "Goal weight achieved"
+
+  physique_benchmarks:
+    arm_development:
+      novice: "Arms match forearms roughly"
+      intermediate: "Visible bicep peak when flexed"
+      advanced: "Full arm development, visible when relaxed"
+
+    shoulder_development:
+      novice: "Some cap visible"
+      intermediate: "Clear separation between delts"
+      advanced: "3D capped shoulders"
+
+    back_development:
+      novice: "Some lat spread visible"
+      intermediate: "V-taper evident"
+      advanced: "Detailed back, visible rhomboids and erectors"
+
+# =============================================================================
+# ATHLETIC PERFORMANCE MILESTONES
+# =============================================================================
+athletic_goals:
+  vertical_jump:
+    description: "Standing vertical jump height"
+
+    standards:
+      average_male: "16-20 inches"
+      good: "20-24 inches"
+      excellent: "24-28 inches"
+      elite: "28-32 inches"
+      professional: "32+ inches"
+
+    improvement_timeline:
+      realistic_gain: "2-4 inches in 12 weeks"
+      methods:
+        - "Strength training (squats, deadlifts)"
+        - "Plyometric training"
+        - "Jump-specific practice"
+
+    milestones_add_4_inches:
+      - name: "Strength Foundation"
+        week: 3
+        target: "Squat improving, no jump change yet"
+      - name: "First Inch"
+        week: 5
+        target: "+1 inch"
+      - name: "Halfway There"
+        week: 8
+        target: "+2 inches"
+      - name: "Final Push"
+        week: 11
+        target: "+3 inches"
+      - name: "Goal Achieved"
+        week: 12
+        target: "+4 inches"
+
+  sprint_speed:
+    forty_yard_dash:
+      average_male: "5.5-6.0 seconds"
+      good: "5.0-5.5 seconds"
+      excellent: "4.5-5.0 seconds"
+      elite: "<4.5 seconds"
+
+    improvement_timeline:
+      realistic_gain: "0.2-0.4 seconds in 8-12 weeks"
+
+    training_phases:
+      - name: "Mechanics Phase"
+        weeks: [1, 3]
+        focus: "Sprint technique, acceleration drills"
+      - name: "Strength Phase"
+        weeks: [4, 6]
+        focus: "Lower body power, hip strength"
+      - name: "Speed Phase"
+        weeks: [7, 10]
+        focus: "Max velocity work, timing"
+      - name: "Realization"
+        weeks: [11, 12]
+        focus: "Rest, peak for test"
+
+  agility:
+    pro_agility_5_10_5:
+      average: "4.8-5.2 seconds"
+      good: "4.4-4.8 seconds"
+      excellent: "4.0-4.4 seconds"
+      elite: "<4.0 seconds"
+
+    three_cone:
+      average: "7.5-8.0 seconds"
+      good: "7.0-7.5 seconds"
+      excellent: "6.5-7.0 seconds"
+      elite: "<6.5 seconds"
+
+# =============================================================================
+# SPORT-SPECIFIC MILESTONES
+# =============================================================================
+sport_milestones:
+  cheerleading:
+    tumbling_progression:
+      level_1:
+        skills: ["Cartwheel", "Round-off"]
+        timeline: "1-3 months"
+      level_2:
+        skills: ["Back walkover", "Front walkover"]
+        timeline: "3-6 months"
+      level_3:
+        skills: ["Back handspring"]
+        timeline: "6-12 months"
+        prerequisites:
+          - "Strong back bridge"
+          - "Snap down mastered"
+          - "Handstand hold"
+      level_4:
+        skills: ["Standing back tuck"]
+        timeline: "6-12 months after BHS"
+        prerequisites:
+          - "Strong back handspring"
+          - "Standing vertical 18+ inches"
+      level_5:
+        skills: ["Layout", "Full twist"]
+        timeline: "12+ months"
+
+    jump_progression:
+      metrics:
+        toe_touch:
+          goal: "Toes above hip level"
+        hurdler:
+          goal: "Full split in air"
+        pike:
+          goal: "Legs parallel to ground"
+
+  football:
+    combine_benchmarks:
+      skill_positions:
+        forty: "<4.6 seconds"
+        vertical: ">34 inches"
+        broad: ">10 feet"
+        bench_225: "10+ reps"
+
+      linemen:
+        forty: "<5.3 seconds"
+        vertical: ">28 inches"
+        bench_225: "25+ reps"
+
+    off_season_progression:
+      phase_1:
+        name: "Base Building"
+        weeks: 6
+        goals:
+          - "Establish strength foundation"
+          - "Build work capacity"
+      phase_2:
+        name: "Strength Development"
+        weeks: 6
+        goals:
+          - "Increase maxes 10-15%"
+          - "Build muscle"
+      phase_3:
+        name: "Power Conversion"
+        weeks: 4
+        goals:
+          - "Improve speed and explosiveness"
+          - "Sport-specific conditioning"
+      phase_4:
+        name: "Pre-Season Prep"
+        weeks: 4
+        goals:
+          - "Peak performance"
+          - "Football-specific skills"
+
+  baseball:
+    throwing_velocity:
+      high_school_avg: "70-75 mph"
+      college_prospect: "85+ mph"
+      professional: "90+ mph"
+
+      improvement_timeline:
+        realistic: "3-5 mph per year with proper training"
+        methods:
+          - "Long toss program"
+          - "Weighted ball training"
+          - "Lower body strength"
+          - "Core rotational power"
+
+    hitting_power:
+      exit_velocity:
+        high_school_avg: "70-80 mph"
+        college_level: "90+ mph"
+        professional: "95+ mph"
+
+      development:
+        - "Rotational strength (med ball work)"
+        - "Lower body power"
+        - "Bat speed training"
+        - "Swing mechanics"
+
+# =============================================================================
+# FLEXIBILITY MILESTONES
+# =============================================================================
+flexibility_goals:
+  full_splits:
+    front_split:
+      progression:
+        - name: "Deep Lunge"
+          target: "Comfortable 90-degree back knee"
+        - name: "Half Split"
+          target: "Front leg straight, back knee down"
+        - name: "Supported Split"
+          target: "Using blocks, close to ground"
+        - name: "Full Split"
+          target: "Hips square, on ground"
+      timeline: "3-12 months depending on starting point"
+      daily_requirement: "10-15 minutes stretching"
+
+    middle_split:
+      progression:
+        - name: "Wide Stance Stretch"
+          target: "Feet wider than shoulders, comfortable"
+        - name: "Frog Stretch"
+          target: "Knees at 90 degrees"
+        - name: "Pancake Stretch"
+          target: "Chest toward floor"
+        - name: "Full Middle Split"
+          target: "180 degrees"
+      timeline: "6-18 months"
+
+  overhead_mobility:
+    goals:
+      - "Full overhead reach without rib flare"
+      - "Arms by ears in standing position"
+      - "Deep overhead squat"
+
+  hip_mobility:
+    goals:
+      - "Full depth squat with heels down"
+      - "Comfortable deep hip hinge"
+      - "90/90 position both sides"
+
+# =============================================================================
+# CALISTHENICS SKILL MILESTONES
+# =============================================================================
+calisthenics_goals:
+  pull_up_progression:
+    milestones:
+      - name: "First Pull-up"
+        target: 1
+        timeline: "2-8 weeks from 0"
+      - name: "5 Pull-ups"
+        target: 5
+        timeline: "4-8 weeks"
+      - name: "10 Pull-ups"
+        target: 10
+        timeline: "8-12 weeks"
+      - name: "15 Pull-ups"
+        target: 15
+        timeline: "12-16 weeks"
+      - name: "20 Pull-ups"
+        target: 20
+        timeline: "16-24 weeks"
+      - name: "Weighted (+25 lbs)"
+        target: "BW + 25 lbs"
+        timeline: "After 15+ strict"
+
+  push_up_progression:
+    milestones:
+      - name: "10 Push-ups"
+        target: 10
+      - name: "25 Push-ups"
+        target: 25
+      - name: "50 Push-ups"
+        target: 50
+      - name: "One-Arm Push-up"
+        target: "1 each side"
+        timeline: "6-12 months of training"
+
+  advanced_skills:
+    muscle_up:
+      timeline: "6-18 months"
+      prerequisites:
+        - "15 pull-ups"
+        - "15 dips"
+        - "5 chest-to-bar pull-ups"
+
+    handstand:
+      timeline: "3-12 months"
+      milestones:
+        - "Wall hold 60 seconds"
+        - "Kick-up attempts"
+        - "10 second freestanding"
+        - "30 second freestanding"
+        - "Walk 10+ feet"
+
+    front_lever:
+      timeline: "12-36 months"
+      milestones:
+        - "Tuck hold 15s"
+        - "Advanced tuck 10s"
+        - "Straddle 5s"
+        - "Full lever 2s"
+
+    planche:
+      timeline: "24-60 months"
+      note: "One of the most difficult skills"
+      milestones:
+        - "Planche lean 30s"
+        - "Tuck planche 5s"
+        - "Advanced tuck 3s"
+        - "Straddle 1s"

@@ -1,11 +1,12 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { familyMembers, workoutSessions, goals } from "@/lib/db/schema";
+import { circleMembers, workoutSessions, goals } from "@/lib/db/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { CircleOnboardingPrompt } from "@/components/circle-onboarding-prompt";
 import Link from "next/link";
 import {
   Users,
@@ -20,11 +21,11 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session) return null;
 
-  const familyId = session.familyId;
+  const circleId = session.circleId;
 
-  // Fetch family members
-  const members = await db.query.familyMembers.findMany({
-    where: eq(familyMembers.familyId, familyId),
+  // Fetch circle members
+  const members = await db.query.circleMembers.findMany({
+    where: eq(circleMembers.circleId, circleId),
     with: {
       metrics: {
         orderBy: (metrics, { desc }) => [desc(metrics.date)],
@@ -62,12 +63,24 @@ export default async function DashboardPage() {
   const totalWorkoutsThisWeek = recentWorkouts.length;
   const totalActiveGoals = activeGoals.length;
 
+  // Check if user is new (just completed onboarding)
+  // New users have only their auto-created personal circle with just themselves
+  const isNewUser = session.circles.length === 1 && members.length === 1;
+  // For circle prompt, check if they only have their personal space
+  const hasMultipleMembers = members.length > 1;
+
   return (
     <div className="space-y-6">
+      {/* Circle onboarding prompt for new users */}
+      <CircleOnboardingPrompt
+        userName={session.user.name?.split(" ")[0]}
+        hasCircles={hasMultipleMembers || session.circles.length > 1}
+        isNewUser={isNewUser}
+      />
       <div>
         <h1 className="text-3xl font-bold">Welcome, {session.user.name}!</h1>
         <p className="text-muted-foreground">
-          Here&apos;s an overview of your family&apos;s fitness journey
+          Here&apos;s an overview of your circle&apos;s fitness journey
         </p>
       </div>
 
@@ -75,7 +88,7 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Family Members</CardTitle>
+            <CardTitle className="text-sm font-medium">Circle Members</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -129,10 +142,10 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Family Members */}
+        {/* Circle Members */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Family Members</CardTitle>
+            <CardTitle>Circle Members</CardTitle>
             <Button asChild variant="ghost" size="sm">
               <Link href="/members">
                 View all
@@ -146,7 +159,7 @@ export default async function DashboardPage() {
                 <Users className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-2 text-sm font-semibold">No members yet</h3>
                 <p className="text-sm text-muted-foreground">
-                  Add family members to get started
+                  Add members to get started
                 </p>
                 <Button asChild className="mt-4">
                   <Link href="/members">Add Member</Link>
@@ -253,7 +266,7 @@ export default async function DashboardPage() {
                 <Target className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-2 text-sm font-semibold">No active goals</h3>
                 <p className="text-sm text-muted-foreground">
-                  Set goals to track your family&apos;s progress
+                  Set goals to track your circle&apos;s progress
                 </p>
                 <Button asChild className="mt-4">
                   <Link href="/goals">Set Goal</Link>

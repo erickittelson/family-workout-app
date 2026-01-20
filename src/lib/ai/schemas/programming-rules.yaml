@@ -1,0 +1,711 @@
+# Programming Rules - AI Training Knowledge Base
+# Evidence-based rules and heuristics for workout programming
+# References: NSCA, ACSM, Brad Schoenfeld, Eric Helms, Greg Nuckols
+
+version: "2.0"
+last_updated: "2026-01-20"
+
+# =============================================================================
+# PROGRESSIVE OVERLOAD
+# =============================================================================
+progressive_overload:
+  description: "Rules for increasing training stimulus over time"
+
+  weight_increases:
+    upper_body:
+      increment_lbs: 5
+      frequency: "when all target reps achieved for 2 sessions"
+    lower_body:
+      increment_lbs: 10
+      frequency: "when all target reps achieved for 2 sessions"
+    small_muscles:  # biceps, triceps, calves
+      increment_lbs: 2.5
+      frequency: "when all target reps achieved for 3 sessions"
+
+  rep_progression:
+    scheme: "double progression"
+    description: "Add reps within range before adding weight"
+    example: "8-12 reps → hit 12 on all sets → increase weight, drop to 8"
+
+  volume_progression:
+    weekly_set_target:
+      min: 10
+      max: 20
+      unit: "sets per muscle group per week"
+    increase_rate: "1-2 sets per week when adapting"
+
+# =============================================================================
+# INTENSITY ZONES
+# =============================================================================
+intensity_zones:
+  strength:
+    percent_1rm: [80, 95]
+    rep_range: [1, 5]
+    rest_seconds: [180, 300]
+    rpe_target: [8, 10]
+
+  hypertrophy:
+    percent_1rm: [65, 80]
+    rep_range: [6, 12]
+    rest_seconds: [60, 120]
+    rpe_target: [7, 9]
+
+  endurance:
+    percent_1rm: [50, 65]
+    rep_range: [12, 20]
+    rest_seconds: [30, 60]
+    rpe_target: [6, 8]
+
+  power:
+    percent_1rm: [50, 70]
+    rep_range: [1, 5]
+    rest_seconds: [120, 180]
+    rpe_target: [7, 8]
+    notes: "Focus on speed, not grinding reps"
+
+  recovery:
+    percent_1rm: [40, 55]
+    rep_range: [15, 25]
+    rest_seconds: [30, 60]
+    rpe_target: [5, 6]
+
+# =============================================================================
+# DELOAD PROTOCOLS
+# =============================================================================
+deload:
+  triggers:
+    consecutive_weeks: 4
+    performance_decline: "2+ sessions with decreased performance"
+    fatigue_score: 8  # out of 10
+    sleep_quality: "poor for 5+ days"
+
+  protocols:
+    volume_reduction:
+      description: "Keep intensity, reduce sets by 40-50%"
+      set_reduction: 0.5
+      weight_percent: 100
+
+    intensity_reduction:
+      description: "Keep volume, reduce weight by 10-20%"
+      set_reduction: 0
+      weight_reduction: 0.15
+
+    active_recovery:
+      description: "Light movement, mobility work, no heavy lifting"
+      activities: ["yoga", "walking", "swimming", "stretching"]
+
+# =============================================================================
+# TRAINING FREQUENCY
+# =============================================================================
+frequency:
+  muscle_group_guidelines:
+    beginner:
+      sessions_per_week: [2, 3]
+      full_body: true
+      notes: "Full body 2-3x/week allows sufficient recovery"
+
+    intermediate:
+      sessions_per_week: [3, 5]
+      split_options: ["upper_lower", "push_pull_legs", "full_body"]
+      notes: "Can handle more volume and frequency"
+
+    advanced:
+      sessions_per_week: [4, 6]
+      split_options: ["push_pull_legs", "body_part_split", "upper_lower"]
+      notes: "Higher frequency, more specialized training"
+
+  minimum_rest_between_same_muscle:
+    small_muscles: 48  # hours
+    large_muscles: 72
+    legs: 72
+    full_body: 48
+
+# =============================================================================
+# EXERCISE SELECTION RULES
+# =============================================================================
+exercise_selection:
+  compound_first:
+    rule: "Always program compound movements before isolation"
+    reason: "Compound movements require more neural drive and energy"
+    examples:
+      - "Squats before leg extensions"
+      - "Bench press before flyes"
+      - "Rows before bicep curls"
+
+  movement_pattern_balance:
+    patterns:
+      - push_horizontal  # bench press, push-ups
+      - push_vertical    # overhead press, dips
+      - pull_horizontal  # rows
+      - pull_vertical    # pull-ups, lat pulldown
+      - hip_hinge        # deadlift, RDL
+      - squat            # squat variations
+      - carry            # farmer's walks
+      - rotation         # wood chops, pallof press
+    rule: "Include opposing patterns in same session or across week"
+
+  limitation_handling:
+    injury:
+      severity_high: "AVOID all exercises targeting affected area"
+      severity_moderate: "Use alternatives, reduce load by 30-50%"
+      severity_low: "Proceed with caution, monitor feedback"
+    preference:
+      action: "Respect but offer alternatives to expand comfort zone"
+    condition:
+      action: "Research contraindications, provide safe alternatives"
+
+# =============================================================================
+# USER FEEDBACK INTEGRATION
+# =============================================================================
+feedback_rules:
+  energy_level:
+    low:  # 1-2 out of 5
+      action: "Reduce volume 30%, lower intensity zone"
+      priority: "high"
+    moderate:  # 3
+      action: "Standard programming"
+    high:  # 4-5
+      action: "Can push intensity, add volume if desired"
+
+  pain_level:
+    none:  # 0
+      action: "Proceed normally"
+    mild:  # 1-3
+      action: "Monitor, avoid direct stress to painful area"
+    moderate:  # 4-6
+      action: "Avoid exercises for affected area, reduce overall intensity"
+    severe:  # 7-10
+      action: "REST RECOMMENDED - light mobility only"
+
+  mood:
+    stressed:
+      action: "Shorter session, focus on enjoyment not PRs"
+      preferred_activities: ["cardio", "yoga", "light strength"]
+    tired:
+      action: "Reduce volume 20-30%, allow longer rest"
+    motivated:
+      action: "Good day for challenging work, PRs possible"
+    anxious:
+      action: "Familiar exercises, steady pace, avoid new skills"
+
+  difficulty_feedback:
+    too_easy:
+      action: "Increase weight 5-10%, add sets, reduce rest"
+    just_right:
+      action: "Maintain current programming"
+    challenging:
+      action: "Maintain - this is the target zone"
+    too_hard:
+      action: "Reduce weight 10%, reduce volume, increase rest"
+
+# =============================================================================
+# WORKOUT DURATION GUIDELINES
+# =============================================================================
+duration_guidelines:
+  warmup:
+    duration_minutes: 5
+    components:
+      - "2 min light cardio (jumping jacks, jogging in place)"
+      - "Dynamic stretches for target muscles"
+      - "Movement prep (bodyweight version of main lifts)"
+
+  main_workout:
+    by_duration:
+      30_minutes:
+        exercises: [4, 6]
+        focus: "Full body or single focus"
+        structure: "circuits or supersets preferred"
+      45_minutes:
+        exercises: [6, 8]
+        focus: "Upper/lower split or full body"
+        structure: "mix of straight sets and supersets"
+      60_minutes:
+        exercises: [8, 10]
+        focus: "Comprehensive training"
+        structure: "strength block + accessory work"
+      90_minutes:
+        exercises: [10, 14]
+        focus: "Advanced split with accessories"
+        structure: "main lifts + supersets + finisher"
+
+  cooldown:
+    duration_minutes: 5
+    components:
+      - "Static stretches for worked muscles (30s each)"
+      - "Breathing exercises"
+      - "Light walking"
+
+# =============================================================================
+# SPECIAL POPULATIONS
+# =============================================================================
+special_considerations:
+  beginner:
+    max_exercises: 6
+    sets_per_exercise: [2, 3]
+    focus: "Movement quality over load"
+    avoid: ["advanced techniques", "high volume", "failure training"]
+
+  returning_after_break:
+    days_off_threshold: 7
+    volume_reduction: 0.5
+    intensity_reduction: 0.2
+    ramp_up_weeks: 2
+    notes: "Start at 50% volume, progress weekly"
+
+  injury_history:
+    warmup_emphasis: true
+    progression_rate: "slower than normal"
+    alternative_requirement: true
+
+# =============================================================================
+# RPE / RIR SCALES (Rate of Perceived Exertion / Reps in Reserve)
+# =============================================================================
+rpe_rir:
+  description: "Autoregulation tools for managing training intensity"
+
+  scale:
+    rpe_10:
+      rir: 0
+      description: "Maximum effort, could not do another rep"
+      when_to_use: "Testing, peaking, occasional sets"
+      recovery_impact: "Very high"
+
+    rpe_9_5:
+      rir: 0.5
+      description: "Could maybe do 1 more, not confident"
+      when_to_use: "Top sets in strength work"
+
+    rpe_9:
+      rir: 1
+      description: "Could definitely do 1 more rep"
+      when_to_use: "Heavy working sets"
+      recovery_impact: "High"
+
+    rpe_8_5:
+      rir: 1.5
+      description: "Could do 1-2 more reps"
+      when_to_use: "Primary working sets"
+
+    rpe_8:
+      rir: 2
+      description: "Could do 2 more reps"
+      when_to_use: "Most hypertrophy work, back-off sets"
+      recovery_impact: "Moderate"
+
+    rpe_7_5:
+      rir: 2.5
+      description: "Could do 2-3 more reps"
+      when_to_use: "Volume accumulation"
+
+    rpe_7:
+      rir: 3
+      description: "Could do 3 more reps"
+      when_to_use: "Speed work, technique practice"
+      recovery_impact: "Low"
+
+    rpe_6:
+      rir: 4
+      description: "Could do 4+ more reps"
+      when_to_use: "Warm-up sets, deload"
+
+  guidelines:
+    training_to_failure:
+      recommendation: "Limit RPE 10 sets"
+      research: "Most gains come from RPE 7-9 range"
+      exceptions:
+        - "Isolation exercises can go to failure more safely"
+        - "Bodyweight exercises where adding load is difficult"
+        - "Testing sessions"
+
+    by_goal:
+      strength:
+        primary_rpe: [8, 9]
+        note: "Need to lift heavy but preserve technique"
+
+      hypertrophy:
+        primary_rpe: [7, 9]
+        note: "Proximity to failure matters more than exact load"
+
+      power:
+        primary_rpe: [7, 8]
+        note: "Bar speed must remain high"
+
+      endurance:
+        primary_rpe: [6, 8]
+        note: "Manage accumulated fatigue"
+
+    calibration:
+      beginner: "Often underestimate true RPE by 2-3 points"
+      intermediate: "Reasonably accurate after experience"
+      advanced: "Very accurate, can use for autoregulation"
+
+# =============================================================================
+# PERIODIZATION MODELS
+# =============================================================================
+periodization:
+  description: "Systematic variation of training variables"
+
+  linear_periodization:
+    description: "Gradual increase in intensity, decrease in volume"
+    best_for: ["Beginners", "Peaking for competition", "Simple progression"]
+    structure:
+      phase_1:
+        name: "Hypertrophy/Anatomical Adaptation"
+        weeks: [4, 6]
+        intensity: "50-70%"
+        volume: "High"
+        reps: [10, 15]
+      phase_2:
+        name: "Strength"
+        weeks: [4, 6]
+        intensity: "70-85%"
+        volume: "Moderate"
+        reps: [4, 8]
+      phase_3:
+        name: "Power/Peaking"
+        weeks: [2, 4]
+        intensity: "85-100%"
+        volume: "Low"
+        reps: [1, 5]
+
+  daily_undulating_periodization:
+    acronym: "DUP"
+    description: "Vary intensity and volume within each week"
+    best_for: ["Intermediates", "Multiple goals", "Non-peaking phases"]
+    structure:
+      example_week:
+        monday:
+          focus: "Strength"
+          sets_reps: "4x5"
+          intensity: "80-85%"
+        wednesday:
+          focus: "Hypertrophy"
+          sets_reps: "4x10"
+          intensity: "65-75%"
+        friday:
+          focus: "Power"
+          sets_reps: "5x3"
+          intensity: "70-80%"
+    advantages:
+      - "More variety reduces boredom"
+      - "Trains multiple qualities simultaneously"
+      - "May reduce overuse injuries"
+
+  weekly_undulating_periodization:
+    acronym: "WUP"
+    description: "Vary emphasis week to week"
+    best_for: ["Advanced", "Complex programming"]
+    structure:
+      week_1: "Accumulation (high volume)"
+      week_2: "Transmutation (moderate volume, higher intensity)"
+      week_3: "Realization (low volume, high intensity)"
+      week_4: "Deload"
+
+  block_periodization:
+    description: "Concentrated loading of specific qualities"
+    best_for: ["Advanced athletes", "Peaking for competition"]
+    blocks:
+      accumulation:
+        duration: "3-4 weeks"
+        goal: "Build work capacity and muscle"
+        characteristics:
+          - "Higher volume"
+          - "Moderate intensity"
+          - "More exercise variety"
+      transmutation:
+        duration: "2-3 weeks"
+        goal: "Convert fitness to specific strength"
+        characteristics:
+          - "Moderate volume"
+          - "Higher intensity"
+          - "More specific exercises"
+      realization:
+        duration: "1-2 weeks"
+        goal: "Express peak performance"
+        characteristics:
+          - "Low volume"
+          - "Very high intensity"
+          - "Competition-specific only"
+
+  conjugate_method:
+    description: "Train multiple qualities simultaneously with exercise rotation"
+    best_for: ["Advanced powerlifters", "Avoiding accommodation"]
+    structure:
+      max_effort_day:
+        goal: "Work up to 1-3RM"
+        exercise_rotation: "Change main movement every 1-3 weeks"
+        examples: ["Box squat", "Rack pulls", "Board press"]
+      dynamic_effort_day:
+        goal: "Develop speed and power"
+        percentage: "50-70% with bands/chains"
+        sets_reps: "8-12 x 2-3 reps"
+        focus: "Bar speed"
+      repetition_method:
+        goal: "Build muscle and work capacity"
+        reps: "Higher rep ranges"
+        focus: "Weak point development"
+
+# =============================================================================
+# EVIDENCE-BASED REP RANGES
+# =============================================================================
+rep_ranges_by_goal:
+  strength:
+    optimal: [1, 6]
+    mechanism: "Neural adaptations, motor unit recruitment"
+    rest: [3, 5]
+    unit: "minutes"
+    sets_per_exercise: [4, 6]
+    frequency: "2-4x per week per movement"
+
+  hypertrophy:
+    optimal: [6, 12]
+    effective: [6, 30]  # Research shows wide range works
+    mechanism: "Mechanical tension, metabolic stress"
+    rest: [1, 3]
+    unit: "minutes"
+    sets_per_exercise: [3, 5]
+    sets_per_muscle_per_week: [10, 20]
+    note: "Volume is primary driver when intensity is adequate"
+
+  muscular_endurance:
+    optimal: [12, 25]
+    mechanism: "Metabolic adaptations, capillarization"
+    rest: [30, 90]
+    unit: "seconds"
+    sets_per_exercise: [2, 4]
+
+  power:
+    optimal: [1, 5]
+    mechanism: "Rate of force development"
+    rest: [2, 5]
+    unit: "minutes"
+    load: "30-70% 1RM depending on exercise"
+    focus: "Bar speed must remain high"
+
+  speed:
+    optimal: [1, 3]
+    mechanism: "Neural efficiency, fast-twitch recruitment"
+    rest: [3, 5]
+    unit: "minutes"
+    load: "Light or bodyweight"
+
+# =============================================================================
+# TRAINING FREQUENCY OPTIMIZATION
+# =============================================================================
+optimal_frequency:
+  research_summary: "Training each muscle 2x per week generally superior to 1x"
+
+  by_goal:
+    hypertrophy:
+      optimal: [2, 3]
+      unit: "times per muscle group per week"
+      reason: "Elevated protein synthesis lasts ~24-48 hours"
+
+    strength:
+      optimal: [2, 4]
+      unit: "times per lift per week"
+      reason: "Skill component benefits from practice frequency"
+
+    skill_acquisition:
+      optimal: [3, 5]
+      unit: "times per skill per week"
+      reason: "Motor learning requires repetition"
+
+  by_training_age:
+    beginner:
+      recommendation: "Full body 3x per week"
+      reason: "Can recover quickly, need practice"
+
+    intermediate:
+      recommendation: "Each muscle 2x per week (any split)"
+      reason: "Higher volume per session tolerated"
+
+    advanced:
+      recommendation: "Individualized based on recovery"
+      reason: "May need more or less frequency depending on volume"
+
+# =============================================================================
+# WARM-UP PROTOCOLS
+# =============================================================================
+warmup:
+  general_warmup:
+    duration: "5-10 minutes"
+    purpose: "Raise core temperature, increase blood flow"
+    methods:
+      - "Light cardio (bike, row, jump rope)"
+      - "Dynamic stretching"
+    avoid: "Long static stretching before lifting"
+
+  movement_preparation:
+    duration: "5-10 minutes"
+    purpose: "Activate target muscles, practice movement patterns"
+    components:
+      - "Mobility drills for target joints"
+      - "Activation exercises (glute bridges, band pulls)"
+      - "Movement-specific dynamic drills"
+
+  ramp_up_sets:
+    purpose: "Prepare nervous system for working weights"
+    protocol:
+      set_1: "Bar only or 30% - 10 reps"
+      set_2: "50% - 5 reps"
+      set_3: "70% - 3 reps"
+      set_4: "85% - 1-2 reps"
+      set_5: "Working weight begins"
+    note: "Adjust based on working weight and exercise"
+
+# =============================================================================
+# TRAINING TO FAILURE GUIDELINES
+# =============================================================================
+failure_training:
+  definition: "Inability to complete another rep with proper form"
+
+  research_findings:
+    hypertrophy:
+      finding: "Training close to failure (1-3 RIR) as effective as failure"
+      implication: "Failure not required for muscle growth"
+
+    strength:
+      finding: "Failure may impair strength gains due to fatigue"
+      implication: "Stop 1-2 reps short for strength training"
+
+    recovery:
+      finding: "Failure training significantly increases recovery needs"
+      implication: "Use sparingly to manage fatigue"
+
+  guidelines:
+    isolation_exercises:
+      failure_ok: true
+      reason: "Lower systemic fatigue, safer"
+
+    compound_exercises:
+      failure_ok: false
+      reason: "Form breakdown risk, high fatigue cost"
+      exception: "Machine compounds (leg press, hack squat) safer"
+
+    per_session:
+      max_failure_sets: 2
+      recommendation: "Save failure for last set of accessory work"
+
+    per_week:
+      recommendation: "Minimize failure sets during volume phases"
+
+# =============================================================================
+# TEMPO TRAINING
+# =============================================================================
+tempo:
+  notation: "Eccentric-Pause-Concentric-Pause (e.g., 3-1-1-0)"
+
+  standard_tempo:
+    notation: "2-0-1-0"
+    description: "Controlled eccentric, explosive concentric"
+    when_to_use: "Most training"
+
+  slow_eccentric:
+    notation: "4-0-1-0"
+    description: "Emphasize lengthening phase"
+    when_to_use: "Hypertrophy, mind-muscle connection, injury rehab"
+    benefit: "Increased mechanical tension"
+
+  paused_reps:
+    notation: "2-2-1-0"
+    description: "Pause at bottom position"
+    when_to_use: "Eliminate momentum, address sticking points"
+    benefit: "Increased difficulty, better positioning"
+
+  explosive:
+    notation: "1-0-X-0"
+    description: "Fast eccentric, explosive concentric"
+    when_to_use: "Power training"
+    note: "X = as fast as possible"
+
+# =============================================================================
+# EXERCISE ORDER PRINCIPLES
+# =============================================================================
+exercise_order:
+  general_principles:
+    - "Power/Olympic lifts first (require freshness)"
+    - "Compound before isolation"
+    - "Large muscles before small"
+    - "Free weights before machines"
+    - "Weak points can go early when fresh"
+
+  by_workout_type:
+    strength_focused:
+      order:
+        1: "Power movements (if included)"
+        2: "Main compound lift"
+        3: "Secondary compound lifts"
+        4: "Accessory work"
+        5: "Core/conditioning"
+
+    hypertrophy_focused:
+      order:
+        1: "Weak point compound movement"
+        2: "Primary compound movements"
+        3: "Secondary compounds"
+        4: "Isolation work"
+        5: "Pump work/finishers"
+
+    athletic_performance:
+      order:
+        1: "Speed/agility drills"
+        2: "Plyometrics"
+        3: "Power movements"
+        4: "Strength work"
+        5: "Conditioning"
+
+# =============================================================================
+# SUPERCOMPENSATION AND RECOVERY
+# =============================================================================
+supercompensation:
+  description: "Body adapts to become stronger after stress + recovery"
+
+  timeline:
+    during_training: "Performance decreases (fatigue)"
+    recovery_phase: "Return to baseline (24-72 hours)"
+    supercompensation: "Performance above baseline (48-96 hours)"
+    detraining: "Returns to baseline if not stimulated again"
+
+  practical_application:
+    train_during_supercompensation: true
+    frequency_guideline: "Train each quality during its supercompensation window"
+    windows:
+      neural: "24-48 hours (can train frequently)"
+      metabolic: "24-48 hours"
+      structural: "48-72 hours for most muscles"
+      heavy_training: "72-96 hours"
+
+# =============================================================================
+# MINIMUM EFFECTIVE DOSE
+# =============================================================================
+minimum_effective_dose:
+  concept: "Least amount of training to make progress"
+
+  when_to_use:
+    - "Busy periods"
+    - "Recovery issues"
+    - "Maintenance phases"
+    - "Returning from injury"
+
+  guidelines:
+    strength_maintenance:
+      frequency: "1x per movement per week"
+      volume: "3-5 heavy sets"
+      intensity: "85%+ 1RM"
+
+    hypertrophy_maintenance:
+      sets_per_muscle_per_week: [6, 8]
+      note: "Can maintain with ~1/3 of building volume"
+
+    cardiovascular:
+      frequency: "2x per week"
+      duration: "20-30 minutes"
+      intensity: "Moderate"
+
+  the_80_20_rule:
+    description: "80% of results come from 20% of exercises"
+    application:
+      - "Prioritize big compound movements"
+      - "Squat, hinge, push, pull, carry"
+      - "Cut accessories when short on time"

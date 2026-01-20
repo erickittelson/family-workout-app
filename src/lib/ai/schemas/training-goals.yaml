@@ -1,0 +1,730 @@
+# Training Goals - Goal-Specific Programming Frameworks
+# Evidence-based protocols for aesthetics, powerlifting, calisthenics, and general fitness
+# References: NSCA, ACSM, Eric Helms, Mike Israetel, Greg Nuckols
+
+version: "2.0"
+last_updated: "2026-01-20"
+
+# =============================================================================
+# VOLUME LANDMARKS (Dr. Mike Israetel / Renaissance Periodization)
+# =============================================================================
+volume_landmarks:
+  description: "Evidence-based set recommendations per muscle group per week"
+
+  MEV:
+    name: "Minimum Effective Volume"
+    description: "Minimum sets to maintain muscle and make slow progress"
+
+  MAV:
+    name: "Maximum Adaptive Volume"
+    description: "Sweet spot for most people - optimal progress without excessive fatigue"
+
+  MRV:
+    name: "Maximum Recoverable Volume"
+    description: "Upper limit before recovery becomes compromised"
+
+  by_muscle_group:
+    chest:
+      MEV: 8
+      MAV: [12, 18]
+      MRV: 22
+      frequency: [1.5, 3]  # sessions per week
+
+    back:
+      MEV: 10
+      MAV: [14, 22]
+      MRV: 26
+      frequency: [2, 4]
+
+    shoulders:
+      side_delts:
+        MEV: 8
+        MAV: [12, 20]
+        MRV: 26
+        note: "Can handle high frequency due to small size"
+      rear_delts:
+        MEV: 6
+        MAV: [12, 16]
+        MRV: 22
+      front_delts:
+        MEV: 0
+        note: "Usually get enough from pressing movements"
+
+    biceps:
+      MEV: 6
+      MAV: [10, 16]
+      MRV: 20
+      frequency: [2, 4]
+
+    triceps:
+      MEV: 6
+      MAV: [10, 14]
+      MRV: 18
+      frequency: [2, 3]
+
+    quadriceps:
+      MEV: 8
+      MAV: [12, 18]
+      MRV: 22
+      frequency: [1.5, 3]
+
+    hamstrings:
+      MEV: 6
+      MAV: [10, 16]
+      MRV: 20
+      frequency: [2, 3]
+
+    glutes:
+      MEV: 4
+      MAV: [8, 12]
+      MRV: 16
+      note: "Often get indirect work from squats and hip hinges"
+
+    calves:
+      MEV: 8
+      MAV: [12, 16]
+      MRV: 20
+      frequency: [3, 6]
+      note: "Respond well to high frequency"
+
+    abs:
+      MEV: 0
+      note: "Get significant work from compound movements"
+      direct_work_benefit: "Visible development requires direct work"
+
+# =============================================================================
+# HYPERTROPHY / AESTHETICS / BODYBUILDING
+# =============================================================================
+aesthetics:
+  name: "Aesthetics & Bodybuilding"
+  description: "Maximize muscle size, symmetry, and visual appeal"
+
+  core_principles:
+    progressive_overload:
+      priority: "highest"
+      methods:
+        - "Add weight when hitting top of rep range for all sets"
+        - "Add reps within prescribed range"
+        - "Add sets (up to MRV)"
+        - "Improve form/ROM before adding weight"
+
+    mechanical_tension:
+      description: "Primary driver of hypertrophy"
+      optimization:
+        - "Full range of motion"
+        - "Controlled eccentric (2-3 seconds)"
+        - "Strong mind-muscle connection"
+        - "Appropriate load (not too light)"
+
+    metabolic_stress:
+      description: "Secondary driver - 'the pump'"
+      techniques:
+        - "Higher rep sets (12-20)"
+        - "Short rest periods (60-90s)"
+        - "Supersets and drop sets"
+        - "Blood flow restriction (advanced)"
+
+    muscle_damage:
+      description: "Contributes but not essential"
+      note: "Excessive soreness indicates too much damage"
+
+  rep_ranges:
+    primary_hypertrophy:
+      range: [8, 12]
+      rest_seconds: [90, 120]
+      notes: "Sweet spot for most muscle growth"
+
+    strength_hypertrophy:
+      range: [6, 8]
+      rest_seconds: [120, 180]
+      notes: "Builds strength that enables heavier hypertrophy work"
+
+    metabolic_hypertrophy:
+      range: [12, 20]
+      rest_seconds: [45, 75]
+      notes: "Pump focus, finishers, smaller muscles"
+
+    mTOR_activation:
+      range: [8, 12]
+      tempo: "3-1-1-1"
+      notes: "Slow eccentric maximizes muscle fiber recruitment"
+
+  training_splits:
+    bro_split:
+      description: "One muscle group per day"
+      frequency: 1
+      volume_per_session: "high"
+      days: 5
+      example:
+        - "Monday: Chest"
+        - "Tuesday: Back"
+        - "Wednesday: Shoulders"
+        - "Thursday: Legs"
+        - "Friday: Arms"
+      pros: ["High volume per session", "Easy to track", "Full recovery"]
+      cons: ["Low frequency", "May not be optimal for naturals"]
+      best_for: ["Enhanced athletes", "Experienced lifters who prefer it"]
+
+    push_pull_legs:
+      description: "Group by movement pattern"
+      frequency: 2
+      days: 6
+      example:
+        - "Monday: Push"
+        - "Tuesday: Pull"
+        - "Wednesday: Legs"
+        - "Thursday: Push"
+        - "Friday: Pull"
+        - "Saturday: Legs"
+      pros: ["Higher frequency", "Balanced approach", "Efficient"]
+      cons: ["6 day commitment", "Can be fatiguing"]
+      best_for: ["Intermediate to advanced", "Natural lifters"]
+
+    upper_lower:
+      description: "Upper/lower body alternation"
+      frequency: 2
+      days: 4
+      example:
+        - "Monday: Upper"
+        - "Tuesday: Lower"
+        - "Wednesday: Rest"
+        - "Thursday: Upper"
+        - "Friday: Lower"
+      pros: ["Good frequency", "Manageable schedule", "Good recovery"]
+      cons: ["Long sessions", "Less focus per muscle"]
+      best_for: ["Intermediates", "Busy schedules"]
+
+    arnold_split:
+      description: "Chest/Back, Shoulders/Arms, Legs"
+      frequency: 2
+      days: 6
+      example:
+        - "Monday: Chest/Back"
+        - "Tuesday: Shoulders/Arms"
+        - "Wednesday: Legs"
+        - "Thursday: Chest/Back"
+        - "Friday: Shoulders/Arms"
+        - "Saturday: Legs"
+      pros: ["Antagonist supersets", "High frequency", "Time efficient"]
+      best_for: ["Intermediate to advanced", "Those who enjoy supersets"]
+
+  techniques:
+    drop_sets:
+      description: "Reduce weight and continue without rest"
+      when_to_use: "Last set of isolation exercises"
+      drops: [1, 3]
+      note: "Very fatiguing - use sparingly"
+
+    rest_pause:
+      description: "Brief rest, continue to failure"
+      protocol:
+        - "Hit failure"
+        - "Rest 10-15 seconds"
+        - "Continue to failure"
+        - "Repeat 1-2 times"
+      when_to_use: "Increase intensity without adding sets"
+
+    supersets:
+      antagonist:
+        description: "Opposing muscles back-to-back"
+        example: ["Chest/Back", "Biceps/Triceps", "Quads/Hamstrings"]
+        benefit: "Time efficient, one muscle rests while other works"
+      pre_exhaust:
+        description: "Isolation before compound"
+        example: "Leg extension before squats"
+        benefit: "Target muscle limits the set, not supporting muscles"
+      compound_set:
+        description: "Two exercises for same muscle"
+        example: "Bench press + Dumbbell flyes"
+        benefit: "Maximum muscle fatigue"
+
+    time_under_tension:
+      slow_eccentrics:
+        tempo: "3-4 second lowering"
+        benefit: "Maximizes mechanical tension"
+      pause_reps:
+        protocol: "1-2 second pause at stretched position"
+        benefit: "Eliminates momentum, increases difficulty"
+      controlled_concentrics:
+        tempo: "1-2 seconds lifting"
+        note: "Don't sacrifice control for speed"
+
+  periodization:
+    mesocycle_structure:
+      weeks: [4, 6]
+      progression: "Increase volume weekly until MRV approach"
+      deload: "Week 4 or 5 reduce volume 50%"
+
+    phases:
+      accumulation:
+        duration_weeks: [3, 4]
+        volume: "moderate to high"
+        intensity: "moderate"
+        goal: "Build training capacity"
+
+      intensification:
+        duration_weeks: [2, 3]
+        volume: "moderate"
+        intensity: "higher"
+        goal: "Increase strength"
+
+      realization:
+        duration_weeks: [1, 2]
+        volume: "reduced"
+        intensity: "peak"
+        goal: "Express built fitness"
+
+  body_proportions:
+    v_taper:
+      emphasis: ["lats", "side_delts", "upper_chest"]
+      reduce: ["obliques_direct_work"]
+      goal: "Wide shoulders, narrow waist"
+
+    golden_ratio:
+      concept: "Ideal proportions based on waist size"
+      shoulders_to_waist: 1.618
+      chest_to_waist: 1.4
+      note: "Aesthetic guideline, not strict rule"
+
+    weak_point_training:
+      principle: "Train lagging muscles first when fresh"
+      frequency: "Can train weak points 3x/week"
+      volume: "Slightly higher than stronger muscles"
+
+# =============================================================================
+# POWERLIFTING
+# =============================================================================
+powerlifting:
+  name: "Powerlifting"
+  description: "Maximize squat, bench press, and deadlift 1RM"
+
+  core_principles:
+    specificity:
+      description: "Practice the competition lifts frequently"
+      frequency: "Each lift 2-4x per week"
+      variations: "Use to address weak points"
+
+    progressive_overload:
+      methods:
+        - "Add weight to the bar"
+        - "Add reps at same weight"
+        - "Add sets"
+        - "Improve bar speed at same weight"
+
+    fatigue_management:
+      description: "Balance stress and recovery for peak performance"
+      tools:
+        - "RPE-based autoregulation"
+        - "Percentage-based programming"
+        - "Velocity-based training"
+
+  competition_lifts:
+    squat:
+      stance_options: ["low_bar", "high_bar"]
+      key_cues:
+        - "Brace before descent"
+        - "Break at hips and knees together"
+        - "Drive through whole foot"
+        - "Keep chest up"
+      common_weak_points:
+        out_of_hole: "Quad weakness - add pause squats, leg press"
+        lockout: "Glute/hip weakness - add hip thrusts, good mornings"
+        forward_lean: "Upper back weakness - add SSB squats, rows"
+
+    bench_press:
+      technique_elements:
+        - "Tight upper back arch"
+        - "Retracted scapulae"
+        - "Leg drive"
+        - "Controlled descent to chest"
+        - "Explosive press"
+      common_weak_points:
+        off_chest: "Pec/front delt weakness - add pause bench, DB press"
+        midrange: "Tricep weakness - add close grip, board press"
+        lockout: "Tricep weakness - add pin press, floor press"
+
+    deadlift:
+      style_options: ["conventional", "sumo"]
+      key_cues:
+        - "Engage lats (protect the armpits)"
+        - "Push floor away"
+        - "Hips and shoulders rise together"
+        - "Lock out with glutes"
+      common_weak_points:
+        off_floor: "Quad/position issue - add deficit pulls, pause deads"
+        knee_height: "Back weakness - add rack pulls, rows"
+        lockout: "Glute/hip weakness - add hip thrusts, block pulls"
+
+  accessory_work:
+    priority: "Support the competition lifts"
+    categories:
+      competition_variations:
+        description: "Close variants of main lifts"
+        examples:
+          squat: ["Pause squat", "Pin squat", "Tempo squat"]
+          bench: ["Close grip", "Pause bench", "Spoto press"]
+          deadlift: ["Deficit", "Pause deadlift", "Block pulls"]
+
+      supplemental:
+        description: "Movements that build muscle in key areas"
+        examples:
+          squat: ["Leg press", "Lunges", "Good mornings"]
+          bench: ["DB press", "Dips", "Overhead press"]
+          deadlift: ["Rows", "RDL", "Hip thrusts"]
+
+      assistance:
+        description: "Isolation work for weak points"
+        examples: ["Tricep pushdowns", "Curls", "Face pulls", "Ab work"]
+        note: "Keep moderate - save energy for main lifts"
+
+  periodization:
+    linear_periodization:
+      description: "Gradually increase intensity, decrease volume"
+      phases:
+        hypertrophy:
+          weeks: [4, 6]
+          reps: [8, 12]
+          intensity: "60-70%"
+        strength:
+          weeks: [4, 6]
+          reps: [4, 6]
+          intensity: "75-85%"
+        peaking:
+          weeks: [2, 4]
+          reps: [1, 3]
+          intensity: "85-100%"
+
+    undulating_periodization:
+      daily_undulating:
+        description: "Vary rep ranges within the week"
+        example:
+          day1: "Heavy (3-5 reps)"
+          day2: "Moderate (6-8 reps)"
+          day3: "Light (8-12 reps)"
+      weekly_undulating:
+        description: "Vary emphasis week to week"
+
+    block_periodization:
+      description: "Focused training blocks"
+      blocks:
+        accumulation:
+          weeks: 4
+          goal: "Build work capacity and muscle"
+          volume: "high"
+          intensity: "moderate"
+        transmutation:
+          weeks: 4
+          goal: "Convert size to strength"
+          volume: "moderate"
+          intensity: "high"
+        realization:
+          weeks: 2
+          goal: "Peak for competition/test"
+          volume: "low"
+          intensity: "very high"
+
+  competition_prep:
+    weeks_out_12:
+      focus: "Volume block, build base"
+
+    weeks_out_8:
+      focus: "Intensity increasing, practice competition commands"
+
+    weeks_out_4:
+      focus: "Peaking, reduce volume significantly"
+
+    weeks_out_1:
+      focus: "Openers only, mobility, rest"
+
+    meet_day:
+      warmup: "Start light, build to opener"
+      attempt_selection:
+        first: "Something you can triple on a bad day"
+        second: "5-7% jump, high confidence"
+        third: "2-5% jump, PR attempt"
+
+  weight_classes:
+    note: "Program should account for weight management"
+    cutting:
+      water_cut_max: "3-5% bodyweight"
+      timeline: "Final 7 days"
+      rehydration: "Critical for performance"
+    bulking:
+      rate: "0.5-1 lb per month"
+      goal: "Fill out weight class gradually"
+
+# =============================================================================
+# CALISTHENICS / BODYWEIGHT TRAINING
+# =============================================================================
+calisthenics:
+  name: "Calisthenics & Bodyweight Training"
+  description: "Master bodyweight movements and skills"
+
+  core_principles:
+    skill_before_fatigue:
+      description: "Practice technical skills when fresh"
+      application: "Skills first, strength second, conditioning last"
+
+    progressive_overload:
+      methods:
+        - "Harder progressions"
+        - "Add reps"
+        - "Add sets"
+        - "Slower tempo"
+        - "Add pauses"
+        - "Add weight (weighted calisthenics)"
+
+    consistency:
+      description: "Bodyweight skills require frequent practice"
+      greasing_the_groove:
+        description: "Frequent sub-maximal practice throughout day"
+        example: "5 pull-ups every hour"
+        benefit: "Builds strength without fatigue"
+
+  skill_progressions:
+    pull:
+      pullup_progression:
+        levels:
+          - name: "Dead Hang"
+            target: "30 seconds"
+          - name: "Scapular Pulls"
+            target: "3x10"
+          - name: "Negative Pull-ups"
+            target: "3x5 (5 second descent)"
+          - name: "Band-Assisted Pull-ups"
+            target: "3x8"
+          - name: "Pull-ups"
+            target: "3x10"
+          - name: "Weighted Pull-ups"
+            progression: "Add 2.5-5 lbs when hitting 3x10"
+
+      muscle_up_progression:
+        prerequisites:
+          - "15+ pull-ups"
+          - "15+ dips"
+          - "5+ high pull-ups (chest to bar)"
+        levels:
+          - name: "High Pull-ups"
+            target: "Pull to chest level"
+          - name: "Jumping Muscle-up"
+            target: "Learn transition"
+          - name: "Band-Assisted Muscle-up"
+            target: "3x5"
+          - name: "Kipping Muscle-up"
+            target: "3x5"
+          - name: "Strict Muscle-up"
+            target: "1 rep"
+
+      front_lever_progression:
+        levels:
+          - name: "Tuck Front Lever"
+            target: "30 seconds"
+          - name: "Advanced Tuck"
+            target: "20 seconds"
+          - name: "Single Leg"
+            target: "10 seconds each side"
+          - name: "Straddle Front Lever"
+            target: "10 seconds"
+          - name: "Full Front Lever"
+            target: "5 seconds"
+
+    push:
+      pushup_progression:
+        levels:
+          - name: "Incline Push-ups"
+            target: "3x20"
+          - name: "Push-ups"
+            target: "3x20"
+          - name: "Diamond Push-ups"
+            target: "3x15"
+          - name: "Archer Push-ups"
+            target: "3x10 each side"
+          - name: "One-Arm Push-up"
+            target: "5 each side"
+
+      handstand_progression:
+        levels:
+          - name: "Wall Plank"
+            target: "60 seconds"
+          - name: "Wall Handstand (chest to wall)"
+            target: "60 seconds"
+          - name: "Wall Handstand (back to wall)"
+            target: "60 seconds"
+          - name: "Freestanding (kick up)"
+            target: "5 attempts"
+          - name: "Freestanding Hold"
+            target: "30 seconds"
+          - name: "Handstand Walk"
+            target: "10 meters"
+
+      planche_progression:
+        levels:
+          - name: "Planche Lean"
+            target: "30 seconds"
+          - name: "Tuck Planche"
+            target: "10 seconds"
+          - name: "Advanced Tuck"
+            target: "5 seconds"
+          - name: "Straddle Planche"
+            target: "3 seconds"
+          - name: "Full Planche"
+            target: "1 second"
+        note: "Advanced skill - takes years to develop"
+
+      dip_progression:
+        levels:
+          - name: "Bench Dips"
+            target: "3x15"
+          - name: "Parallel Bar Dips"
+            target: "3x15"
+          - name: "Ring Dips"
+            target: "3x10"
+          - name: "Weighted Dips"
+            target: "Add weight at 3x15"
+
+    legs:
+      squat_progression:
+        levels:
+          - name: "Assisted Squat"
+            target: "3x15"
+          - name: "Bodyweight Squat"
+            target: "3x20"
+          - name: "Bulgarian Split Squat"
+            target: "3x12 each leg"
+          - name: "Shrimp Squat"
+            target: "3x8 each leg"
+          - name: "Pistol Squat"
+            target: "5 each leg"
+
+      pistol_squat_progression:
+        levels:
+          - name: "Assisted Pistol (holding support)"
+            target: "3x5 each leg"
+          - name: "Box Pistol (sitting to elevated surface)"
+            target: "3x5 each leg"
+          - name: "Negative Pistol"
+            target: "3x3 each leg (5 second descent)"
+          - name: "Assisted Up Pistol"
+            target: "3x3 each leg"
+          - name: "Full Pistol"
+            target: "5 each leg"
+
+    core:
+      l_sit_progression:
+        levels:
+          - name: "Tucked L-Sit"
+            target: "30 seconds"
+          - name: "One Leg Extended"
+            target: "15 seconds each side"
+          - name: "Full L-Sit"
+            target: "15 seconds"
+          - name: "L-Sit to V-Sit"
+            target: "5 reps"
+
+      dragon_flag_progression:
+        levels:
+          - name: "Tucked Dragon Flag"
+            target: "3x5"
+          - name: "Single Leg"
+            target: "3x5 each side"
+          - name: "Straddle Dragon Flag"
+            target: "3x5"
+          - name: "Full Dragon Flag"
+            target: "3x5"
+
+  training_structure:
+    skill_day:
+      warmup: "10 min mobility"
+      skills: "20-30 min practice (handstands, levers, etc.)"
+      strength: "20-30 min pulling/pushing work"
+      core: "10 min"
+
+    strength_day:
+      warmup: "10 min"
+      main_work: "40-50 min compound calisthenics"
+      accessory: "10-15 min isolation/prehab"
+
+    splits:
+      full_body:
+        frequency: "3x per week"
+        best_for: "Beginners, skill focus"
+
+      upper_lower:
+        frequency: "4x per week"
+        best_for: "Intermediate"
+
+      push_pull_legs:
+        frequency: "6x per week"
+        best_for: "Advanced, high volume"
+
+# =============================================================================
+# GENERAL FITNESS / FUNCTIONAL FITNESS
+# =============================================================================
+general_fitness:
+  name: "General Physical Preparedness (GPP)"
+  description: "Well-rounded fitness across all domains"
+
+  fitness_domains:
+    - "Cardiovascular endurance"
+    - "Muscular strength"
+    - "Muscular endurance"
+    - "Flexibility"
+    - "Power"
+    - "Speed"
+    - "Coordination"
+    - "Agility"
+    - "Balance"
+    - "Accuracy"
+
+  training_philosophy:
+    constantly_varied:
+      description: "Regularly change exercises, loads, and time domains"
+      purpose: "Broad adaptation, prevent plateaus"
+
+    functional_movements:
+      description: "Multi-joint, natural movements"
+      examples: ["Squat", "Deadlift", "Press", "Pull", "Carry"]
+
+    high_intensity:
+      description: "Work hard relative to capacity"
+      note: "Intensity is scalable"
+
+  weekly_template:
+    day1:
+      focus: "Strength"
+      example: "Heavy squat + pressing"
+
+    day2:
+      focus: "Conditioning"
+      example: "Metcon (AMRAP/EMOM)"
+
+    day3:
+      focus: "Skill + Strength"
+      example: "Olympic lifting + pull work"
+
+    day4:
+      focus: "Rest or Active Recovery"
+
+    day5:
+      focus: "Mixed Modal"
+      example: "Strength + Conditioning combo"
+
+    day6:
+      focus: "Long Aerobic"
+      example: "30-60 min zone 2 cardio"
+
+    day7:
+      focus: "Rest"
+
+  scaling:
+    principle: "Maintain stimulus, adjust load/movement"
+    examples:
+      pullups:
+        rx: "Pull-ups"
+        scaled: ["Jumping pull-ups", "Ring rows", "Banded pull-ups"]
+      hspu:
+        rx: "Handstand push-ups"
+        scaled: ["Pike push-ups", "Box pike push-ups", "DB press"]
+      muscle_up:
+        rx: "Muscle-up"
+        scaled: ["Pull-up + Dip", "Jumping muscle-up", "Banded"]

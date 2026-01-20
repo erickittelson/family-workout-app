@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -23,16 +23,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Users, Loader2, Edit, Trash2 } from "lucide-react";
+import { Plus, Users, Loader2, Edit, Trash2, Target, X } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
-interface FamilyMember {
+interface GoalInput {
+  id: string;
+  title: string;
+  category: string;
+  description?: string;
+  targetValue?: string;
+  targetUnit?: string;
+  targetDate?: string;
+}
+
+interface CircleMember {
   id: string;
   name: string;
   avatar?: string;
+  profilePicture?: string;
   dateOfBirth?: string;
   gender?: string;
+  role?: string;
   latestMetrics?: {
     weight?: number;
     height?: number;
@@ -43,10 +55,10 @@ interface FamilyMember {
 
 export default function MembersPage() {
   const { data: session } = useSession();
-  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [members, setMembers] = useState<CircleMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
+  const [editingMember, setEditingMember] = useState<CircleMember | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -59,6 +71,28 @@ export default function MembersPage() {
     fitnessLevel: "",
     notes: "",
   });
+
+  const [goals, setGoals] = useState<GoalInput[]>([]);
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [currentGoal, setCurrentGoal] = useState<GoalInput>({
+    id: "",
+    title: "",
+    category: "",
+    description: "",
+    targetValue: "",
+    targetUnit: "",
+    targetDate: "",
+  });
+
+  const GOAL_CATEGORIES = [
+    { value: "strength", label: "Strength" },
+    { value: "endurance", label: "Endurance" },
+    { value: "weight", label: "Weight/Body Composition" },
+    { value: "skill", label: "Skill/Movement" },
+    { value: "flexibility", label: "Flexibility/Mobility" },
+    { value: "habit", label: "Habit/Consistency" },
+    { value: "other", label: "Other" },
+  ];
 
   useEffect(() => {
     fetchMembers();
@@ -73,7 +107,7 @@ export default function MembersPage() {
       }
     } catch (error) {
       console.error("Failed to fetch members:", error);
-      toast.error("Failed to load family members");
+      toast.error("Failed to load members");
     } finally {
       setLoading(false);
     }
@@ -90,10 +124,43 @@ export default function MembersPage() {
       fitnessLevel: "",
       notes: "",
     });
+    setGoals([]);
+    setShowGoalForm(false);
+    setCurrentGoal({
+      id: "",
+      title: "",
+      category: "",
+      description: "",
+      targetValue: "",
+      targetUnit: "",
+      targetDate: "",
+    });
     setEditingMember(null);
   };
 
-  const openEditDialog = (member: FamilyMember) => {
+  const addGoal = () => {
+    if (!currentGoal.title || !currentGoal.category) {
+      toast.error("Goal title and category are required");
+      return;
+    }
+    setGoals([...goals, { ...currentGoal, id: crypto.randomUUID() }]);
+    setCurrentGoal({
+      id: "",
+      title: "",
+      category: "",
+      description: "",
+      targetValue: "",
+      targetUnit: "",
+      targetDate: "",
+    });
+    setShowGoalForm(false);
+  };
+
+  const removeGoal = (goalId: string) => {
+    setGoals(goals.filter((g) => g.id !== goalId));
+  };
+
+  const openEditDialog = (member: CircleMember) => {
     setEditingMember(member);
     setFormData({
       name: member.name,
@@ -138,6 +205,28 @@ export default function MembersPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        const memberId = editingMember?.id || data.id;
+
+        // Create goals for new members
+        if (!editingMember && goals.length > 0 && memberId) {
+          for (const goal of goals) {
+            await fetch("/api/goals", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                memberId,
+                title: goal.title,
+                category: goal.category,
+                description: goal.description || null,
+                targetValue: goal.targetValue ? parseFloat(goal.targetValue) : null,
+                targetUnit: goal.targetUnit || null,
+                targetDate: goal.targetDate || null,
+              }),
+            });
+          }
+        }
+
         toast.success(
           editingMember ? "Member updated successfully" : "Member added successfully"
         );
@@ -157,7 +246,7 @@ export default function MembersPage() {
   };
 
   const handleDelete = async (memberId: string) => {
-    if (!confirm("Are you sure you want to remove this family member?")) {
+    if (!confirm("Are you sure you want to remove this member?")) {
       return;
     }
 
@@ -209,9 +298,9 @@ export default function MembersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Family Members</h1>
+          <h1 className="text-3xl font-bold">Circle Members</h1>
           <p className="text-muted-foreground">
-            Manage your family&apos;s profiles and metrics
+            Manage your circle&apos;s profiles and metrics
           </p>
         </div>
         <Dialog
@@ -230,7 +319,7 @@ export default function MembersPage() {
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingMember ? "Edit Member" : "Add Family Member"}
+                {editingMember ? "Edit Member" : "Add Member"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -358,6 +447,175 @@ export default function MembersPage() {
                 />
               </div>
 
+              {/* Goals Section - Only for new members */}
+              {!editingMember && (
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Goals
+                    </h4>
+                    {!showGoalForm && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowGoalForm(true)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Goal
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* List of added goals */}
+                  {goals.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {goals.map((goal) => (
+                        <div
+                          key={goal.id}
+                          className="flex items-center justify-between p-2 bg-muted rounded-lg"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{goal.title}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {goal.category}
+                              {goal.targetValue && goal.targetUnit && (
+                                <> · Target: {goal.targetValue} {goal.targetUnit}</>
+                              )}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeGoal(goal.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Goal input form */}
+                  {showGoalForm && (
+                    <div className="space-y-3 p-3 border rounded-lg bg-muted/50">
+                      <div className="space-y-2">
+                        <Label htmlFor="goalTitle">Goal Title *</Label>
+                        <Input
+                          id="goalTitle"
+                          value={currentGoal.title}
+                          onChange={(e) =>
+                            setCurrentGoal({ ...currentGoal, title: e.target.value })
+                          }
+                          placeholder="e.g., Bench press 200 lbs"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="goalCategory">Category *</Label>
+                          <Select
+                            value={currentGoal.category}
+                            onValueChange={(value) =>
+                              setCurrentGoal({ ...currentGoal, category: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {GOAL_CATEGORIES.map((cat) => (
+                                <SelectItem key={cat.value} value={cat.value}>
+                                  {cat.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="goalTargetDate">Target Date</Label>
+                          <Input
+                            id="goalTargetDate"
+                            type="date"
+                            value={currentGoal.targetDate}
+                            onChange={(e) =>
+                              setCurrentGoal({ ...currentGoal, targetDate: e.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="goalTargetValue">Target Value</Label>
+                          <Input
+                            id="goalTargetValue"
+                            type="number"
+                            value={currentGoal.targetValue}
+                            onChange={(e) =>
+                              setCurrentGoal({ ...currentGoal, targetValue: e.target.value })
+                            }
+                            placeholder="e.g., 200"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="goalTargetUnit">Unit</Label>
+                          <Input
+                            id="goalTargetUnit"
+                            value={currentGoal.targetUnit}
+                            onChange={(e) =>
+                              setCurrentGoal({ ...currentGoal, targetUnit: e.target.value })
+                            }
+                            placeholder="e.g., lbs, miles, reps"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="goalDescription">Description</Label>
+                        <Textarea
+                          id="goalDescription"
+                          value={currentGoal.description}
+                          onChange={(e) =>
+                            setCurrentGoal({ ...currentGoal, description: e.target.value })
+                          }
+                          placeholder="Optional details about this goal..."
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowGoalForm(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={addGoal}
+                        >
+                          Add Goal
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {goals.length === 0 && !showGoalForm && (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      No goals added yet. Goals help the AI create personalized workouts.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -380,9 +638,9 @@ export default function MembersPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">No family members yet</h3>
+            <h3 className="text-lg font-semibold">No members yet</h3>
             <p className="text-muted-foreground mb-4">
-              Add your first family member to get started
+              Add your first member to get started
             </p>
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -398,6 +656,9 @@ export default function MembersPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12">
+                      {member.profilePicture && (
+                        <AvatarImage src={member.profilePicture} alt={member.name} />
+                      )}
                       <AvatarFallback className="text-lg">
                         {getInitials(member.name)}
                       </AvatarFallback>
@@ -422,9 +683,11 @@ export default function MembersPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => openEditDialog(member)}
+                      asChild
                     >
-                      <Edit className="h-4 w-4" />
+                      <Link href={`/members/${member.id}`}>
+                        <Edit className="h-4 w-4" />
+                      </Link>
                     </Button>
                     <Button
                       variant="ghost"

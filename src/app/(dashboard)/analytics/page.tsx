@@ -271,8 +271,8 @@ export default function AnalyticsPage() {
                     paddingAngle={5}
                     dataKey="count"
                     nameKey="category"
-                    label={({ category, percent }) =>
-                      `${category} (${(percent * 100).toFixed(0)}%)`
+                    label={({ name, percent }) =>
+                      `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
                     }
                   >
                     {analytics.workoutsByCategory.map((entry, index) => (

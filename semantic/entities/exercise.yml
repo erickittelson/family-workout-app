@@ -1,0 +1,140 @@
+# Exercise Entity
+# Exercise library with comprehensive metadata
+
+entity: exercise
+version: "1.0.0"
+description: "An exercise in the library with full metadata"
+table: exercises
+
+# Primary identifier
+primary_key: id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier"
+
+  - name: name
+    type: string
+    description: "Exercise name"
+    required: true
+
+  - name: description
+    type: string
+    description: "Brief description of the exercise"
+
+  - name: instructions
+    type: string
+    description: "Step-by-step instructions"
+
+  - name: category
+    type: enum
+    values: ["strength", "cardio", "flexibility", "skill", "sport", "plyometric"]
+    description: "Primary exercise category"
+    required: true
+
+  - name: muscle_groups
+    type: array
+    description: "Primary muscles targeted"
+    values: ["chest", "back", "shoulders", "biceps", "triceps", "forearms",
+             "abs", "obliques", "lower_back", "glutes", "quads", "hamstrings",
+             "calves", "hip_flexors", "adductors", "abductors"]
+
+  - name: secondary_muscles
+    type: array
+    description: "Secondary muscles worked"
+
+  - name: equipment
+    type: array
+    description: "Required equipment"
+    values: ["barbell", "dumbbell", "kettlebell", "cable", "machine",
+             "bodyweight", "resistance_band", "pull_up_bar", "bench",
+             "squat_rack", "gymnastics_rings", "foam_roller"]
+
+  - name: difficulty
+    type: enum
+    values: ["beginner", "intermediate", "advanced"]
+    description: "Skill/strength level required"
+
+  - name: force
+    type: enum
+    values: ["push", "pull", "static", "dynamic"]
+    description: "Type of force applied"
+
+  - name: mechanic
+    type: enum
+    values: ["compound", "isolation"]
+    description: "Whether multiple joints are involved"
+
+  - name: benefits
+    type: array
+    description: "Training benefits"
+    values: ["strength", "speed", "power", "flexibility", "endurance",
+             "balance", "coordination", "hypertrophy"]
+
+  - name: contraindications
+    type: array
+    description: "Conditions where this exercise is not recommended"
+
+  - name: progressions
+    type: array
+    description: "Harder variations to progress to"
+
+  - name: regressions
+    type: array
+    description: "Easier variations for beginners"
+
+  - name: prerequisites
+    type: array
+    description: "Skills/exercises required before attempting"
+
+  - name: embedding
+    type: vector
+    dimensions: 1536
+    description: "AI embedding for similarity search"
+
+# Query examples
+examples:
+  - question: "Find chest exercises"
+    sql: |
+      SELECT name, description, difficulty, equipment
+      FROM exercises
+      WHERE 'chest' = ANY(muscle_groups)
+        AND is_active = true
+      ORDER BY difficulty
+
+  - question: "Find exercises for home with no equipment"
+    sql: |
+      SELECT name, description, muscle_groups
+      FROM exercises
+      WHERE 'bodyweight' = ANY(equipment)
+        AND is_active = true
+      ORDER BY name
+
+  - question: "Find similar exercises to bench press"
+    sql: |
+      SELECT name, description, 1 - (embedding <=> $1) as similarity
+      FROM exercises
+      WHERE is_active = true
+      ORDER BY embedding <=> $1
+      LIMIT 10
+
+  - question: "Find exercises safe for someone with shoulder issues"
+    sql: |
+      SELECT name, description
+      FROM exercises
+      WHERE is_active = true
+        AND NOT ('shoulder_pain' = ANY(contraindications))
+        AND NOT ('shoulders' = ANY(muscle_groups))
+      ORDER BY name
+
+# Synonyms
+synonyms:
+  exercise: [movement, lift, drill, activity]
+  bench_press: [bench, chest press, barbell bench]
+  squat: [back squat, barbell squat]
+  deadlift: [conventional deadlift, barbell deadlift]
+  pull_up: [pullup, chin up]
+  push_up: [pushup, press up]
+  muscle_up: [muscleup, bar muscle up]

@@ -1,0 +1,170 @@
+# Progress Metrics
+# Goal progress, strength gains, and improvement tracking
+
+metric: progress
+version: "1.0.0"
+description: "Tracks progress toward goals and overall improvement"
+
+# Key metrics
+definitions:
+  strength_progress:
+    description: "1RM progress over time for major lifts"
+    formula: |
+      WITH pr_history AS (
+        SELECT
+          e.name as exercise,
+          pr.value,
+          pr.date,
+          pr.value - LAG(pr.value) OVER (PARTITION BY e.id ORDER BY pr.date) as gain
+        FROM personal_records pr
+        JOIN exercises e ON pr.exercise_id = e.id
+        WHERE pr.member_id = $1
+          AND pr.record_type = 'all_time'
+          AND pr.rep_max = 1
+      )
+      SELECT
+        exercise,
+        value as current_1rm,
+        SUM(gain) FILTER (WHERE date >= NOW() - INTERVAL '30 days') as monthly_gain,
+        SUM(gain) FILTER (WHERE date >= NOW() - INTERVAL '90 days') as quarterly_gain
+      FROM pr_history
+      GROUP BY exercise, value
+    unit: "lbs"
+
+  goal_completion_rate:
+    description: "Percentage of goals completed on time"
+    formula: |
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'completed') * 100.0 /
+        NULLIF(COUNT(*) FILTER (WHERE status != 'active'), 0) as rate
+      FROM goals
+      WHERE member_id = $1
+        AND created_at >= NOW() - INTERVAL '1 year'
+    unit: "percent"
+
+  milestone_velocity:
+    description: "Rate of milestone completion"
+    formula: |
+      SELECT
+        COUNT(*) FILTER (WHERE completed_at >= NOW() - INTERVAL '30 days') as monthly,
+        COUNT(*) FILTER (WHERE completed_at >= NOW() - INTERVAL '7 days') as weekly
+      FROM milestones m
+      JOIN goals g ON m.goal_id = g.id
+      WHERE g.member_id = $1
+    unit: "milestones"
+
+  body_composition_progress:
+    description: "Weight and body fat changes"
+    formula: |
+      WITH metrics AS (
+        SELECT
+          date,
+          weight,
+          body_fat_percentage,
+          weight - FIRST_VALUE(weight) OVER (ORDER BY date) as weight_change,
+          body_fat_percentage - FIRST_VALUE(body_fat_percentage) OVER (ORDER BY date) as bf_change
+        FROM member_metrics
+        WHERE member_id = $1
+          AND date >= NOW() - INTERVAL '90 days'
+      )
+      SELECT *
+      FROM metrics
+      ORDER BY date DESC
+      LIMIT 10
+
+  skill_acquisition_rate:
+    description: "New skills achieved over time"
+    formula: |
+      SELECT
+        COUNT(*) FILTER (WHERE current_status_date >= NOW() - INTERVAL '30 days') as monthly,
+        COUNT(*) FILTER (WHERE current_status_date >= NOW() - INTERVAL '90 days') as quarterly
+      FROM member_skills
+      WHERE member_id = $1
+        AND current_status = 'achieved'
+
+# Progress analysis
+analysis:
+  strength_trajectory:
+    description: "Project future 1RM based on current progress"
+    method: "Linear regression on PR history"
+    use_case: "Goal setting and timeline estimation"
+
+  plateau_detection:
+    description: "Identify stalled progress"
+    indicators:
+      - "No PR in 4+ weeks for actively trained lift"
+      - "Same weight used for 3+ sessions"
+      - "RPE increasing without weight increase"
+    recommendations:
+      - "Vary rep ranges"
+      - "Add accessory work"
+      - "Check recovery factors"
+      - "Consider deload"
+
+  rate_of_progress:
+    description: "Categorize progress speed"
+    categories:
+      beginner: "5-10 lbs/month on main lifts"
+      intermediate: "2-5 lbs/month on main lifts"
+      advanced: "1-2 lbs/month or less"
+    context: "Set realistic expectations based on training age"
+
+# Query examples
+examples:
+  - question: "How much has my bench improved?"
+    sql: |
+      SELECT
+        MIN(pr.value) FILTER (WHERE pr.date = min_date) as starting,
+        MAX(pr.value) as current,
+        MAX(pr.value) - MIN(pr.value) FILTER (WHERE pr.date = min_date) as total_gain
+      FROM personal_records pr
+      JOIN exercises e ON pr.exercise_id = e.id
+      CROSS JOIN (
+        SELECT MIN(date) as min_date
+        FROM personal_records pr2
+        JOIN exercises e2 ON pr2.exercise_id = e2.id
+        WHERE pr2.member_id = $1 AND e2.name ILIKE '%bench%'
+      ) m
+      WHERE pr.member_id = $1
+        AND e.name ILIKE '%bench%'
+        AND pr.record_type = 'all_time'
+
+  - question: "What goals have I completed?"
+    sql: |
+      SELECT title, category, completed_at,
+        EXTRACT(DAY FROM completed_at - created_at) as days_to_complete
+      FROM goals
+      WHERE member_id = $1
+        AND status = 'completed'
+      ORDER BY completed_at DESC
+
+  - question: "What's my progress on active goals?"
+    sql: |
+      SELECT
+        title,
+        category,
+        target_value,
+        current_value,
+        ROUND((current_value / NULLIF(target_value, 0)) * 100) as progress_pct,
+        target_date
+      FROM goals
+      WHERE member_id = $1 AND status = 'active'
+      ORDER BY target_date
+
+# Insights
+insights:
+  new_pr:
+    condition: "New personal record set"
+    template: "PR Alert! You just hit {value} {unit} on {exercise}. That's {gain} more than your previous best!"
+
+  goal_close:
+    condition: "Goal >= 90% complete"
+    template: "You're so close on '{goal}'! Just {remaining} {unit} to go."
+
+  plateau_warning:
+    condition: "No progress on lift for 4+ weeks"
+    template: "Your {exercise} has been stuck at {weight} for a while. Let's try something new to break through."
+
+  milestone_achieved:
+    condition: "Milestone completed"
+    template: "Milestone crushed! '{milestone}' for your goal '{goal}' is done. Keep it up!"

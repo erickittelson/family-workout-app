@@ -1,0 +1,138 @@
+# Workout Plan Entity
+# Reusable workout template
+
+entity: workout_plan
+version: "1.0.0"
+description: "A reusable workout template with exercises"
+table: workout_plans
+
+# Primary identifier
+primary_key: id
+foreign_keys:
+  - field: circle_id
+    references: circles.id
+  - field: created_by_member_id
+    references: circle_members.id
+
+# Core fields
+fields:
+  - name: id
+    type: uuid
+    description: "Unique identifier"
+
+  - name: name
+    type: string
+    description: "Plan name"
+    required: true
+
+  - name: description
+    type: string
+    description: "What the plan is for"
+
+  - name: category
+    type: enum
+    values: ["strength", "cardio", "hiit", "mixed", "skill", "recovery"]
+    description: "Type of workout"
+
+  - name: difficulty
+    type: enum
+    values: ["beginner", "intermediate", "advanced"]
+    description: "Required fitness level"
+
+  - name: estimated_duration
+    type: integer
+    unit: minutes
+    description: "Expected time to complete"
+
+  - name: ai_generated
+    type: boolean
+    description: "Whether AI created this plan"
+    default: false
+
+# Relations
+relations:
+  exercises:
+    table: workout_plan_exercises
+    type: one_to_many
+    description: "Exercises in the plan"
+    fields:
+      - order: integer
+      - sets: integer
+      - reps: string  # Can be "8-12" or "to failure"
+      - weight: string  # Can be "80%" or specific
+      - duration: integer  # For timed exercises
+      - rest_between_sets: integer
+
+  sessions:
+    table: workout_sessions
+    type: one_to_many
+    description: "Sessions created from this plan"
+
+# Query examples
+examples:
+  - question: "What workout plans exist for the circle?"
+    sql: |
+      SELECT wp.name, wp.category, wp.difficulty, wp.estimated_duration,
+        COUNT(wpe.id) as exercise_count
+      FROM workout_plans wp
+      LEFT JOIN workout_plan_exercises wpe ON wp.id = wpe.plan_id
+      WHERE wp.circle_id = $1
+      GROUP BY wp.id
+      ORDER BY wp.created_at DESC
+
+  - question: "Get a plan with all exercises"
+    sql: |
+      SELECT wp.*,
+        json_agg(
+          json_build_object(
+            'exercise', e.name,
+            'order', wpe.order,
+            'sets', wpe.sets,
+            'reps', wpe.reps,
+            'rest', wpe.rest_between_sets
+          ) ORDER BY wpe.order
+        ) as exercises
+      FROM workout_plans wp
+      JOIN workout_plan_exercises wpe ON wp.id = wpe.plan_id
+      JOIN exercises e ON wpe.exercise_id = e.id
+      WHERE wp.id = $1
+      GROUP BY wp.id
+
+# Generation templates
+generation_templates:
+  push_day:
+    muscles: ["chest", "shoulders", "triceps"]
+    exercise_count: 5-7
+    structure:
+      - compound: 2-3
+      - isolation: 3-4
+
+  pull_day:
+    muscles: ["back", "biceps", "rear_delts"]
+    exercise_count: 5-7
+    structure:
+      - compound: 2-3
+      - isolation: 3-4
+
+  leg_day:
+    muscles: ["quads", "hamstrings", "glutes", "calves"]
+    exercise_count: 5-6
+    structure:
+      - compound: 3
+      - isolation: 2-3
+
+  full_body:
+    muscles: ["all"]
+    exercise_count: 6-8
+    structure:
+      - upper_push: 1-2
+      - upper_pull: 1-2
+      - lower: 2-3
+      - core: 1
+
+# Synonyms
+synonyms:
+  workout_plan: [plan, routine, program, template]
+  push_day: [chest day, pressing day]
+  pull_day: [back day]
+  leg_day: [lower body, legs]

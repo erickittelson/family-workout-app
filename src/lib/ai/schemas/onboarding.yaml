@@ -1,0 +1,447 @@
+# Conversational Onboarding Schema
+# Version: 1.0
+# Last Updated: 2026-01-20
+#
+# This schema defines the AI-powered conversational onboarding flow
+# that guides new users through profile creation in a natural, engaging way.
+
+version: "1.0"
+last_updated: "2026-01-20"
+
+onboarding:
+  description: "Conversational onboarding flow for new users"
+  total_phases: 9
+
+  persona:
+    name: "Coach"
+    avatar_emoji: "💪"
+    traits:
+      - warm and encouraging
+      - knowledgeable but not preachy
+      - asks follow-up questions naturally
+      - celebrates user responses
+      - explains the "why" behind questions
+      - uses casual, conversational language
+      - adapts tone to user's energy
+
+    voice_guidelines:
+      - Use contractions (I'm, you're, let's)
+      - Keep sentences short and punchy
+      - Add encouraging affirmations naturally
+      - Reference previous answers to show listening
+      - Use "we" to build partnership feeling
+
+    boundaries:
+      - Never give medical advice
+      - Don't promise specific results
+      - Respect user privacy choices
+      - Accept "skip" or "prefer not to say" gracefully
+
+  phases:
+    welcome:
+      order: 1
+      goal: "Build rapport, understand motivation"
+      data_collected:
+        - name_preference
+        - primary_motivation
+      feature_intro: "AI coaching capabilities"
+      opening_message: |
+        Hey! I'm your AI coach here at Workout Circle.
+
+        Before we start building workouts together, I'd love to get to know you a bit.
+
+        What should I call you?
+      quick_replies:
+        - null  # No quick replies for name input
+      extraction_hints:
+        name_preference:
+          type: string
+          description: "User's preferred name/nickname"
+          extraction_prompt: "Extract the name or nickname the user wants to be called"
+
+    motivation:
+      order: 2
+      goal: "Understand why they're here"
+      data_collected:
+        - primary_motivation
+        - specific_goals_mentioned
+      feature_intro: "Goal tracking & personalized workouts"
+      transition_message: |
+        Nice to meet you, {name}!
+
+        So what brings you to Workout Circle? What's driving you to level up your fitness right now?
+      quick_replies:
+        - "Get stronger"
+        - "Lose weight"
+        - "Build muscle"
+        - "Feel healthier"
+      extraction_hints:
+        primary_motivation:
+          type: enum
+          values: [strength, weight_loss, muscle_building, health, sports_performance, energy, mental_health, other]
+          description: "The primary reason they want to work out"
+
+    basics:
+      order: 3
+      goal: "Collect demographic info naturally"
+      data_collected:
+        - age
+        - gender
+        - height
+        - weight
+      feature_intro: "Progress tracking over time"
+      transition_template: |
+        {motivation_response}
+
+        To give you the best workout recommendations, I need to know a bit about you.
+
+        How old are you?
+      quick_replies:
+        - null
+      follow_up_questions:
+        - "And your height? (feet and inches is fine)"
+        - "What about your current weight?"
+        - "One more - do you identify as male, female, or prefer another term?"
+      extraction_hints:
+        age:
+          type: number
+          range: [13, 100]
+          description: "User's age in years"
+          accept_phrases: ["I'm X", "X years old", just a number]
+        gender:
+          type: enum
+          values: [male, female, other, prefer_not_to_say]
+        height:
+          type: object
+          properties:
+            feet: number
+            inches: number
+          accept_formats: ["X'Y\"", "X feet Y inches", "X ft Y in", "X foot Y"]
+        weight:
+          type: number
+          unit: lbs
+          accept_formats: ["X lbs", "X pounds", just a number]
+
+    fitness_background:
+      order: 4
+      goal: "Understand current fitness level"
+      data_collected:
+        - experience_level
+        - current_activity
+        - training_frequency
+      feature_intro: "AI adapts workouts to your level"
+      transition_template: |
+        Got it! {basic_summary}
+
+        Now let's talk about where you're at fitness-wise.
+
+        How would you describe your current workout experience?
+      quick_replies:
+        - "Complete beginner"
+        - "Some experience"
+        - "Regular gym-goer"
+        - "Advanced lifter"
+      follow_up_questions:
+        - "How many days a week are you currently working out? (It's okay if it's zero!)"
+        - "What kinds of workouts do you typically do?"
+      extraction_hints:
+        experience_level:
+          type: enum
+          values: [beginner, intermediate, advanced, elite]
+          mapping:
+            beginner: ["complete beginner", "new to working out", "never worked out", "just starting"]
+            intermediate: ["some experience", "worked out before", "on and off", "casual"]
+            advanced: ["regular gym-goer", "consistent", "few years", "experienced"]
+            elite: ["advanced lifter", "competitive", "years of experience", "athlete"]
+        training_frequency:
+          type: number
+          range: [0, 7]
+          description: "Days per week currently training"
+
+    goals:
+      order: 5
+      goal: "Define specific fitness goals"
+      data_collected:
+        - primary_goal
+        - secondary_goals
+        - timeline
+      feature_intro: "Goal tracking & milestone celebrations"
+      transition_template: |
+        {fitness_acknowledgment}
+
+        Now let's get specific about your goals.
+
+        If you could wave a magic wand and achieve ONE fitness goal, what would it be?
+      quick_replies:
+        - "Lose 20 pounds"
+        - "Bench press my bodyweight"
+        - "Run a 5K"
+        - "Build visible abs"
+      follow_up_questions:
+        - "Love that goal! Any other fitness wins you're chasing?"
+        - "What's your ideal timeline? When do you want to hit these goals by?"
+      extraction_hints:
+        primary_goal:
+          type: object
+          properties:
+            type: [strength, cardio, weight, skill, aesthetic, health]
+            description: string
+            target_value: number (optional)
+            target_unit: string (optional)
+        timeline:
+          type: string
+          description: "When they want to achieve their goals"
+          accept_formats: ["X weeks", "X months", "by [date]", "this year"]
+
+    body_composition:
+      order: 6
+      goal: "Get body metrics for personalization"
+      data_collected:
+        - body_fat_estimate
+        - target_weight
+        - physique_goals
+      feature_intro: "Body composition tracking & progress photos"
+      transition_template: |
+        {goals_acknowledgment}
+
+        Let's talk body composition. This helps me understand where you're starting from.
+
+        Do you have a rough idea of your body fat percentage? (It's totally fine to guess or skip this!)
+      quick_replies:
+        - "Not sure"
+        - "Around 15-20%"
+        - "Around 20-25%"
+        - "Over 25%"
+      follow_up_questions:
+        - "What's your target weight, if you have one? Or are you more focused on how you look/feel?"
+      extraction_hints:
+        body_fat_estimate:
+          type: number
+          range: [3, 60]
+          optional: true
+          description: "Estimated body fat percentage"
+        target_weight:
+          type: number
+          optional: true
+          description: "Goal weight in lbs"
+
+    limitations:
+      order: 7
+      goal: "Understand any physical limitations"
+      data_collected:
+        - injuries
+        - conditions
+        - restrictions
+      feature_intro: "Smart exercise filtering - we'll never suggest movements that could hurt you"
+      transition_template: |
+        {composition_acknowledgment}
+
+        Super important question: Do you have any injuries, physical limitations, or conditions I should know about?
+
+        This helps me make sure every workout is safe for you.
+      quick_replies:
+        - "Nope, all good!"
+        - "Bad back"
+        - "Knee issues"
+        - "Shoulder problems"
+      follow_up_questions:
+        - "Got it. Are there any specific movements you know you need to avoid?"
+        - "Any other health conditions that affect your training?"
+      extraction_hints:
+        limitations:
+          type: array
+          items:
+            type: object
+            properties:
+              body_part: string
+              condition: string
+              severity: [mild, moderate, severe]
+              avoid_movements: array of strings
+
+    personal_records:
+      order: 8
+      goal: "Baseline strength/cardio levels"
+      data_collected:
+        - key_lifts
+        - cardio_benchmarks
+        - bodyweight_skills
+      feature_intro: "PR tracking - watch those numbers climb!"
+      transition_template: |
+        {limitations_acknowledgment}
+
+        Last section - let's establish some baselines so we can track your progress!
+
+        Do you know any of your current maxes or PRs? Like bench press, squat, deadlift? Even estimates help!
+      quick_replies:
+        - "I don't know my maxes"
+        - "I have some numbers"
+        - "Mostly cardio focused"
+      follow_up_questions:
+        - "What about cardio? Do you know your mile time, or how far you can run?"
+        - "Any bodyweight skills? Like pull-ups, push-ups, planks?"
+      extraction_hints:
+        personal_records:
+          type: array
+          items:
+            type: object
+            properties:
+              exercise: string
+              value: number
+              unit: [lbs, kg, reps, seconds, minutes, miles, km]
+              is_estimate: boolean
+
+    preferences:
+      order: 9
+      goal: "Training preferences"
+      data_collected:
+        - workout_duration
+        - equipment_access
+        - preferred_styles
+        - workout_days
+      feature_intro: "Personalized workout programming"
+      transition_template: |
+        Awesome! Last few questions about how you like to train.
+
+        How much time do you typically have for a workout?
+      quick_replies:
+        - "30 minutes"
+        - "45 minutes"
+        - "60 minutes"
+        - "90+ minutes"
+      follow_up_questions:
+        - "What equipment do you have access to?"
+        - "What days work best for you to work out?"
+      extraction_hints:
+        workout_duration:
+          type: number
+          unit: minutes
+          common_values: [30, 45, 60, 90]
+        equipment_access:
+          type: array
+          common_values: [full_gym, home_gym, dumbbells, barbells, machines, bodyweight_only, kettlebells, resistance_bands]
+        workout_days:
+          type: array
+          values: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+
+    wrap_up:
+      order: 10
+      goal: "Summarize and create profile"
+      data_collected: []
+      feature_intro: "Your personalized dashboard"
+      action: "generate_member_profile"
+      completion_template: |
+        {name}, you're all set! Here's what I learned about you:
+
+        {profile_summary}
+
+        I'm excited to start this fitness journey with you! Your dashboard is ready, and I'll be here whenever you need workout suggestions, want to track progress, or just need some motivation.
+
+        Let's crush it! 💪
+
+  # Data extraction schema for final profile creation
+  extraction_schema:
+    member:
+      name:
+        type: string
+        required: true
+        source: welcome.name_preference
+      date_of_birth:
+        type: date
+        required: false
+        calculated_from: basics.age
+        calculation: "today minus age in years"
+      gender:
+        type: enum
+        values: [male, female, other]
+        required: false
+        source: basics.gender
+
+    metrics:
+      height_inches:
+        type: number
+        required: false
+        calculated_from: basics.height
+        calculation: "(feet * 12) + inches"
+      weight_lbs:
+        type: number
+        required: false
+        source: basics.weight
+      body_fat_percentage:
+        type: number
+        required: false
+        source: body_composition.body_fat_estimate
+      target_weight_lbs:
+        type: number
+        required: false
+        source: body_composition.target_weight
+      fitness_level:
+        type: enum
+        values: [beginner, intermediate, advanced, elite]
+        required: false
+        source: fitness_background.experience_level
+
+    goals:
+      type: array
+      items:
+        type: string
+        target_value: number
+        target_unit: string
+        target_date: date
+      source: [goals.primary_goal, goals.secondary_goals]
+
+    limitations:
+      type: array
+      items:
+        type: string
+        severity: enum
+        affected_areas: array
+      source: limitations.limitations
+
+    personal_records:
+      type: array
+      items:
+        exercise: string
+        value: number
+        unit: string
+      source: personal_records.personal_records
+
+    preferences:
+      workout_duration_minutes:
+        type: number
+        source: preferences.workout_duration
+      equipment:
+        type: array
+        source: preferences.equipment_access
+      preferred_days:
+        type: array
+        source: preferences.workout_days
+
+  # AI response guidelines
+  response_guidelines:
+    max_message_length: 200  # words
+    tone: conversational
+    emoji_usage: moderate
+    personalization:
+      - Reference user's name frequently
+      - Callback to earlier answers
+      - Acknowledge their specific situation
+
+    transition_patterns:
+      acknowledgment_starters:
+        - "Love it!"
+        - "Nice!"
+        - "That's awesome!"
+        - "Got it!"
+        - "Perfect!"
+        - "Great choice!"
+
+      bridging_phrases:
+        - "Now let's talk about..."
+        - "Next up..."
+        - "Moving on..."
+        - "Here's a quick one..."
+        - "Almost there!"
+
+    skip_handling:
+      phrases: ["skip", "pass", "don't know", "prefer not to say", "not sure"]
+      response: "No problem! We can always update this later. Let's move on."

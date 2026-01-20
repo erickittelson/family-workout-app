@@ -1,0 +1,150 @@
+# Semantic Layer Manifest
+# Version-controlled source of truth for AI context
+#
+# This manifest defines the semantic layer structure for the Workout Circle app.
+# YAML files are compiled to JSON at build time and selectively loaded at runtime.
+
+version: "1.0.0"
+name: "workout-circle-semantic-layer"
+description: "Semantic knowledge base for AI-powered fitness coaching"
+last_updated: "2026-01-20"
+
+# Schema version for runtime compatibility
+schema_version: 1
+
+# Token budgets for context injection
+token_budgets:
+  semantic_context: 900  # Max tokens for semantic definitions
+  user_state: 1200       # Max tokens for user data from Neon
+  policy: 200            # Max tokens for safety/privacy policies
+  total: 2500            # Total context budget per request
+
+# Domain organization
+domains:
+  - id: workouts
+    file: domains/workouts.yml
+    description: "Workout logging, plans, and session management"
+
+  - id: coaching
+    file: domains/coaching.yml
+    description: "AI coaching conversations and mental support"
+
+  - id: analytics
+    file: domains/analytics.yml
+    description: "Progress tracking, trends, and insights"
+
+  - id: goals
+    file: domains/goals.yml
+    description: "Goal setting, milestones, and achievement tracking"
+
+  - id: onboarding
+    file: domains/onboarding.yml
+    description: "User onboarding and profile setup"
+
+# Entity definitions
+entities:
+  - id: member
+    file: entities/member.yml
+    description: "Circle member profile and preferences"
+
+  - id: circle
+    file: entities/circle.yml
+    description: "Circle (group) management"
+
+  - id: exercise
+    file: entities/exercise.yml
+    description: "Exercise library and definitions"
+
+  - id: workout_session
+    file: entities/workout_session.yml
+    description: "Logged workout sessions"
+
+  - id: workout_plan
+    file: entities/workout_plan.yml
+    description: "Workout plan templates"
+
+  - id: goal
+    file: entities/goal.yml
+    description: "Fitness goals and milestones"
+
+  - id: personal_record
+    file: entities/personal_record.yml
+    description: "Personal records and PRs"
+
+  - id: limitation
+    file: entities/limitation.yml
+    description: "Physical limitations and injuries"
+
+  - id: skill
+    file: entities/skill.yml
+    description: "Athletic skills (gymnastics, calisthenics)"
+
+# Metrics definitions
+metrics:
+  - id: adherence
+    file: metrics/adherence.yml
+    description: "Workout consistency and adherence rates"
+
+  - id: volume
+    file: metrics/volume.yml
+    description: "Training volume calculations"
+
+  - id: progress
+    file: metrics/progress.yml
+    description: "Goal and strength progress tracking"
+
+  - id: recovery
+    file: metrics/recovery.yml
+    description: "Muscle recovery and readiness"
+
+# Policy definitions (always loaded)
+policies:
+  - id: safety
+    file: policies/safety.yml
+    description: "Safety guidelines for exercise recommendations"
+    always_include: true
+
+  - id: privacy
+    file: policies/privacy.yml
+    description: "User data privacy and handling"
+    always_include: true
+
+# Intent classification for selective loading
+intent_categories:
+  workout_logging:
+    domains: [workouts]
+    entities: [member, exercise, workout_session]
+    metrics: [volume]
+
+  workout_planning:
+    domains: [workouts]
+    entities: [member, exercise, workout_plan, limitation]
+    metrics: [volume, recovery]
+
+  progress_analytics:
+    domains: [analytics]
+    entities: [member, workout_session, personal_record]
+    metrics: [progress, adherence, volume]
+
+  goal_management:
+    domains: [goals]
+    entities: [member, goal]
+    metrics: [progress]
+
+  coaching_support:
+    domains: [coaching]
+    entities: [member]
+    metrics: [adherence, progress]
+
+  onboarding:
+    domains: [onboarding]
+    entities: [member, limitation, goal]
+    metrics: []
+
+# Build configuration
+build:
+  output_dir: ".semantic-build"
+  compile_to: "json"
+  generate_index: true
+  validate_schema: true
+  minify: true
