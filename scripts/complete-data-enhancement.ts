@@ -753,6 +753,7 @@ async function enhanceSharedWorkouts() {
   console.log("\n=== Enhancing Shared Workouts ===");
   
   // Get shared workouts with their workout plan data
+  // Use CROSS JOIN LATERAL for set-returning functions (required in PostgreSQL)
   const result = await db.execute(sql`
     SELECT 
       sw.id,
@@ -763,8 +764,8 @@ async function enhanceSharedWorkouts() {
         (
           SELECT jsonb_agg(DISTINCT mg)
           FROM workout_plan_exercises wpe
-          JOIN exercises e ON wpe.exercise_id = e.id,
-          jsonb_array_elements_text(e.muscle_groups) as mg
+          JOIN exercises e ON wpe.exercise_id = e.id
+          CROSS JOIN LATERAL jsonb_array_elements_text(e.muscle_groups) AS mg
           WHERE wpe.plan_id = wp.id
         ),
         '[]'::jsonb
@@ -773,8 +774,8 @@ async function enhanceSharedWorkouts() {
         (
           SELECT jsonb_agg(DISTINCT eq)
           FROM workout_plan_exercises wpe
-          JOIN exercises e ON wpe.exercise_id = e.id,
-          jsonb_array_elements_text(e.equipment) as eq
+          JOIN exercises e ON wpe.exercise_id = e.id
+          CROSS JOIN LATERAL jsonb_array_elements_text(e.equipment) AS eq
           WHERE wpe.plan_id = wp.id AND e.equipment IS NOT NULL
         ),
         '[]'::jsonb
