@@ -1,15 +1,56 @@
 /**
- * Comprehensive seeding script for workouts, programs, and challenges
+ * Comprehensive seeding script for workouts with exercise linking
  * Run: npx tsx scripts/seed-workouts-programs-challenges.ts
  */
 
-// Use the first circle ID for seeding
-const SYSTEM_CIRCLE_ID = "51101c29-197c-4f41-915e-adfc9082ec1e";
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
+import { db } from "../src/lib/db";
+import {
+  workoutPlans,
+  workoutPlanExercises,
+  exercises,
+  circles,
+  sharedWorkouts,
+} from "../src/lib/db/schema";
+import { eq, and, sql } from "drizzle-orm";
+
+// Workout exercise definition
+interface WorkoutExercise {
+  name: string;
+  sets?: number;
+  reps?: string;
+  duration?: number;
+  distance?: number;
+  distanceUnit?: string;
+  restBetweenSets?: number;
+  notes?: string;
+  groupId?: string;
+  groupType?: string;
+}
+
+// Workout definition
+interface WorkoutDefinition {
+  name: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  estimatedDuration: number;
+  structureType: string;
+  timeCapSeconds?: number;
+  scoringType?: string;
+  roundsTarget?: number;
+  emomIntervalSeconds?: number;
+  isOfficial: boolean;
+  tags: string[];
+  exercises: WorkoutExercise[];
+}
 
 // ============================================================================
 // CROSSFIT-STYLE WORKOUTS (15)
 // ============================================================================
-export const CROSSFIT_WORKOUTS = [
+const CROSSFIT_WORKOUTS: WorkoutDefinition[] = [
   {
     name: "Fran",
     description: "Classic CrossFit benchmark workout. 21-15-9 reps of Thrusters and Pull-ups for time.",
@@ -271,7 +312,7 @@ export const CROSSFIT_WORKOUTS = [
 // ============================================================================
 // BODYBUILDING WORKOUTS (15)
 // ============================================================================
-export const BODYBUILDING_WORKOUTS = [
+const BODYBUILDING_WORKOUTS: WorkoutDefinition[] = [
   {
     name: "Arnold Chest & Back",
     description: "Classic Arnold-style push/pull superset workout for chest and back.",
@@ -284,7 +325,7 @@ export const BODYBUILDING_WORKOUTS = [
     exercises: [
       { name: "Barbell Bench Press", sets: 4, reps: "10,8,6,4", groupId: "A1", groupType: "superset" },
       { name: "Weighted Pull-up", sets: 4, reps: "10,8,6,4", groupId: "A2", groupType: "superset" },
-      { name: "Incline Dumbbell Press", sets: 4, reps: "10", groupId: "B1", groupType: "superset" },
+      { name: "Incline Bench Press", sets: 4, reps: "10", groupId: "B1", groupType: "superset" },
       { name: "Barbell Row", sets: 4, reps: "10", groupId: "B2", groupType: "superset" },
       { name: "Dumbbell Fly", sets: 3, reps: "12", groupId: "C1", groupType: "superset" },
       { name: "Dumbbell Row", sets: 3, reps: "12", groupId: "C2", groupType: "superset" },
@@ -382,7 +423,7 @@ export const BODYBUILDING_WORKOUTS = [
     exercises: [
       { name: "Barbell Bench Press", sets: 4, reps: "6-8", restBetweenSets: 150 },
       { name: "Overhead Press", sets: 4, reps: "8-10", restBetweenSets: 120 },
-      { name: "Incline Dumbbell Press", sets: 3, reps: "10-12", restBetweenSets: 90 },
+      { name: "Incline Bench Press", sets: 3, reps: "10-12", restBetweenSets: 90 },
       { name: "Cable Crossover", sets: 3, reps: "12-15", restBetweenSets: 60 },
       { name: "Lateral Raise", sets: 4, reps: "12-15", restBetweenSets: 60 },
       { name: "Tricep Pushdown", sets: 3, reps: "12", restBetweenSets: 60 },
@@ -476,7 +517,7 @@ export const BODYBUILDING_WORKOUTS = [
     tags: ["bodybuilding", "chest", "specialization"],
     exercises: [
       { name: "Barbell Bench Press", sets: 5, reps: "8,8,6,6,4", restBetweenSets: 150 },
-      { name: "Incline Dumbbell Press", sets: 4, reps: "10", restBetweenSets: 90 },
+      { name: "Incline Bench Press", sets: 4, reps: "10", restBetweenSets: 90 },
       { name: "Decline Bench Press", sets: 3, reps: "10", restBetweenSets: 90 },
       { name: "Cable Crossover", sets: 4, reps: "12-15", restBetweenSets: 60 },
       { name: "Dumbbell Fly", sets: 3, reps: "15", restBetweenSets: 60 },
@@ -555,7 +596,7 @@ export const BODYBUILDING_WORKOUTS = [
 // ============================================================================
 // STRENGTH WORKOUTS (10)
 // ============================================================================
-export const STRENGTH_WORKOUTS = [
+const STRENGTH_WORKOUTS: WorkoutDefinition[] = [
   {
     name: "StrongLifts 5x5 - Workout A",
     description: "Squat, Bench Press, Barbell Row - 5 sets of 5 reps each.",
@@ -716,7 +757,7 @@ export const STRENGTH_WORKOUTS = [
 // ============================================================================
 // CARDIO WORKOUTS (10)
 // ============================================================================
-export const CARDIO_WORKOUTS = [
+const CARDIO_WORKOUTS: WorkoutDefinition[] = [
   {
     name: "Sprint Intervals",
     description: "8 rounds of 30-second sprints with 90-second rest.",
@@ -869,12 +910,179 @@ export const CARDIO_WORKOUTS = [
   },
 ];
 
-// Export all for reference
-export const ALL_WORKOUTS = [
+// Combine all workouts
+const ALL_WORKOUTS: WorkoutDefinition[] = [
   ...CROSSFIT_WORKOUTS,
   ...BODYBUILDING_WORKOUTS,
   ...STRENGTH_WORKOUTS,
   ...CARDIO_WORKOUTS,
 ];
 
-console.log(`Total workouts: ${ALL_WORKOUTS.length}`);
+// Cache for exercise IDs
+const exerciseIdCache: Map<string, string> = new Map();
+
+// Get exercise ID by name (with caching)
+async function getExerciseId(name: string): Promise<string | null> {
+  // Check cache first
+  if (exerciseIdCache.has(name)) {
+    return exerciseIdCache.get(name)!;
+  }
+
+  // Query database
+  const exercise = await db.query.exercises.findFirst({
+    where: (e, { eq }) => eq(e.name, name),
+    columns: { id: true },
+  });
+
+  if (exercise) {
+    exerciseIdCache.set(name, exercise.id);
+    return exercise.id;
+  }
+
+  return null;
+}
+
+// Main seeding function
+async function seedWorkouts() {
+  console.log(`Starting workout seeding... (${ALL_WORKOUTS.length} workouts)`);
+
+  // Get or create the system circle
+  let systemCircle = await db.query.circles.findFirst({
+    where: (c, { eq }) => eq(c.name, "System"),
+  });
+
+  if (!systemCircle) {
+    console.log("Creating system circle...");
+    const [newCircle] = await db.insert(circles).values({
+      name: "System",
+      description: "System-generated content",
+      visibility: "private",
+    }).returning();
+    systemCircle = newCircle;
+  }
+
+  const circleId = systemCircle.id;
+  console.log(`Using circle: ${circleId}`);
+
+  let successCount = 0;
+  let skipCount = 0;
+  let errorCount = 0;
+  const createdWorkoutIds: Map<string, string> = new Map();
+
+  for (const workout of ALL_WORKOUTS) {
+    try {
+      // Check if workout already exists
+      const existing = await db.query.workoutPlans.findFirst({
+        where: (w, { and, eq }) => and(
+          eq(w.name, workout.name),
+          eq(w.circleId, circleId)
+        ),
+      });
+
+      if (existing) {
+        skipCount++;
+        createdWorkoutIds.set(workout.name, existing.id);
+        continue;
+      }
+
+      // Create workout plan
+      const [workoutPlan] = await db.insert(workoutPlans).values({
+        circleId,
+        name: workout.name,
+        description: workout.description,
+        category: workout.category,
+        difficulty: workout.difficulty,
+        estimatedDuration: workout.estimatedDuration,
+        structureType: workout.structureType,
+        timeCapSeconds: workout.timeCapSeconds,
+        scoringType: workout.scoringType,
+        roundsTarget: workout.roundsTarget,
+        emomIntervalSeconds: workout.emomIntervalSeconds,
+        isOfficial: workout.isOfficial,
+        tags: workout.tags,
+      }).returning();
+
+      createdWorkoutIds.set(workout.name, workoutPlan.id);
+
+      // Add exercises to workout
+      let exerciseOrder = 0;
+      for (const ex of workout.exercises) {
+        const exerciseId = await getExerciseId(ex.name);
+
+        if (!exerciseId) {
+          console.warn(`  Warning: Exercise "${ex.name}" not found for workout "${workout.name}"`);
+          continue;
+        }
+
+        await db.insert(workoutPlanExercises).values({
+          planId: workoutPlan.id,
+          exerciseId,
+          order: exerciseOrder++,
+          sets: ex.sets,
+          reps: ex.reps,
+          duration: ex.duration,
+          distance: ex.distance,
+          distanceUnit: ex.distanceUnit,
+          restBetweenSets: ex.restBetweenSets,
+          notes: ex.notes,
+          groupId: ex.groupId,
+          groupType: ex.groupType,
+        });
+      }
+
+      // Also create a shared workout entry for discoverability
+      await db.insert(sharedWorkouts).values({
+        workoutPlanId: workoutPlan.id,
+        userId: "system", // System shared workouts
+        title: workout.name,
+        description: workout.description,
+        category: workout.category,
+        difficulty: workout.difficulty,
+        estimatedDuration: workout.estimatedDuration,
+        visibility: "public",
+        isFeatured: true,
+        saveCount: Math.floor(Math.random() * 50) + 5,
+        useCount: Math.floor(Math.random() * 100) + 10,
+        avgRating: 4 + Math.random(),
+        reviewCount: Math.floor(Math.random() * 20) + 5,
+        popularityScore: Math.random() * 100,
+      });
+
+      successCount++;
+    } catch (error) {
+      console.error(`Error inserting workout "${workout.name}":`, error);
+      errorCount++;
+    }
+  }
+
+  console.log(`\nWorkout seeding complete:`);
+  console.log(`  ✓ Inserted: ${successCount}`);
+  console.log(`  ○ Skipped (existing): ${skipCount}`);
+  console.log(`  ✗ Errors: ${errorCount}`);
+  console.log(`  Total: ${ALL_WORKOUTS.length}`);
+
+  // Print workout ID mapping for seed-programs.ts
+  console.log("\n// Workout IDs for seed-programs.ts:");
+  console.log("const WORKOUT_IDS = {");
+  for (const [name, id] of createdWorkoutIds) {
+    const key = name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+    console.log(`  "${key}": "${id}",`);
+  }
+  console.log("};");
+}
+
+// Run the seed
+seedWorkouts()
+  .then(() => {
+    console.log("\nSeeding finished successfully!");
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Seeding failed:", err);
+    process.exit(1);
+  });
+
+// Export for reference
+export { ALL_WORKOUTS, CROSSFIT_WORKOUTS, BODYBUILDING_WORKOUTS, STRENGTH_WORKOUTS, CARDIO_WORKOUTS };

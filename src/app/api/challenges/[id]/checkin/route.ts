@@ -5,9 +5,45 @@ import {
   challenges,
   challengeParticipants,
   challengeProgress,
+  personalRecords,
+  circleMembers,
+  exercises,
 } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, ilike } from "drizzle-orm";
 import { evaluateAndAwardBadges } from "@/lib/badges";
+
+// Helper to check if a PR-linked task is achieved
+async function checkPRTask(
+  task: { exercise?: string; targetValue?: number; targetUnit?: string },
+  memberId: string
+): Promise<{ achieved: boolean; currentValue?: number }> {
+  if (!task.exercise || !task.targetValue) {
+    return { achieved: false };
+  }
+
+  // Find the exercise
+  const exercise = await db.query.exercises.findFirst({
+    where: ilike(exercises.name, `%${task.exercise}%`),
+  });
+
+  if (!exercise) {
+    return { achieved: false };
+  }
+
+  // Get user's PR for this exercise
+  const pr = await db.query.personalRecords.findFirst({
+    where: and(
+      eq(personalRecords.memberId, memberId),
+      eq(personalRecords.exerciseId, exercise.id)
+    ),
+    orderBy: (pr, { desc }) => [desc(pr.value)],
+  });
+
+  const currentValue = pr?.value || 0;
+  const achieved = currentValue >= task.targetValue;
+
+  return { achieved, currentValue };
+}
 
 // Daily check-in for a challenge
 export async function POST(
@@ -77,13 +113,41 @@ export async function POST(
       );
     }
 
-    // Check if all required tasks are completed
+    // Get member ID for PR checks
+    const member = await db.query.circleMembers.findFirst({
+      where: eq(circleMembers.userId, session.user.id),
+    });
+
+    // Check if all required tasks are completed, including PR auto-verification
     const requiredTasks = challenge.dailyTasks?.filter(
       (t: any) => t.isRequired
     ) || [];
-    const completedRequired = requiredTasks.every((task: any) =>
-      completedTasks?.includes(task.name)
-    );
+    
+    // Build PR status for all PR-linked tasks
+    const prStatus: Record<string, { achieved: boolean; currentValue?: number }> = {};
+    const allTasks = challenge.dailyTasks || [];
+    
+    for (const task of allTasks) {
+      if (task.type === "pr_check" && task.exercise && member) {
+        const status = await checkPRTask(task, member.id);
+        prStatus[task.exercise] = status;
+        
+        // Auto-complete PR tasks that are achieved
+        if (status.achieved && !completedTasks?.includes(task.name)) {
+          completedTasks = completedTasks || [];
+          completedTasks.push(task.name);
+        }
+      }
+    }
+    
+    const completedRequired = requiredTasks.every((task: any) => {
+      // For PR tasks, check against PR status
+      if (task.type === "pr_check" && task.exercise) {
+        return prStatus[task.exercise]?.achieved;
+      }
+      // For regular tasks, check against completedTasks array
+      return completedTasks?.includes(task.name);
+    });
 
     if (!completedRequired) {
       // For challenges that restart on fail, this would reset progress
@@ -177,11 +241,67 @@ export async function POST(
       day: newDayNumber,
       streak: newStreak,
       daysRemaining: challenge.durationDays - newDayNumber,
+      prStatus, // Include PR status for UI to display
     });
   } catch (error) {
     console.error("Error checking in:", error);
     return NextResponse.json(
       { error: "Failed to check in" },
+      { status: 500 }
+    );
+  }
+}
+
+// GET - Fetch current PR status for challenge tasks
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    // Get challenge
+    const challenge = await db.query.challenges.findFirst({
+      where: eq(challenges.id, id),
+    });
+
+    if (!challenge) {
+      return NextResponse.json(
+        { error: "Challenge not found" },
+        { status: 404 }
+      );
+    }
+
+    // Get member ID for PR checks
+    const member = await db.query.circleMembers.findFirst({
+      where: eq(circleMembers.userId, session.user.id),
+    });
+
+    if (!member) {
+      return NextResponse.json({ prStatus: {} });
+    }
+
+    // Build PR status for all PR-linked tasks
+    const prStatus: Record<string, { achieved: boolean; currentValue?: number }> = {};
+    const allTasks = challenge.dailyTasks || [];
+
+    for (const task of allTasks as any[]) {
+      if (task.type === "pr_check" && task.exercise) {
+        const status = await checkPRTask(task, member.id);
+        prStatus[task.exercise] = status;
+      }
+    }
+
+    return NextResponse.json({ prStatus });
+  } catch (error) {
+    console.error("Error fetching PR status:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch PR status" },
       { status: 500 }
     );
   }

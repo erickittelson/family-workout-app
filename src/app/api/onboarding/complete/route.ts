@@ -201,6 +201,16 @@ export async function POST(request: Request) {
       });
     }
 
+    // Build workout preferences from collected onboarding data
+    const workoutPreferences = {
+      workoutDays: data.workoutDays || undefined,
+      workoutDuration: data.workoutDuration || undefined,
+      trainingFrequency: data.trainingFrequency || undefined,
+      activityLevel: data.activityLevel || undefined,
+      currentActivity: data.currentActivity || undefined,
+      secondaryGoals: data.secondaryGoals || undefined,
+    };
+
     // Create or update user_profiles with user-level data
     // This is separate from circle_members as it's user-wide settings
     await db
@@ -213,6 +223,7 @@ export async function POST(request: Request) {
         birthYear: birthYear || null,
         city: data.city || null,
         visibility: data.profileVisibility || "private",
+        workoutPreferences,
       })
       .onConflictDoUpdate({
         target: userProfiles.userId,
@@ -223,6 +234,7 @@ export async function POST(request: Request) {
           birthYear: birthYear || null,
           city: data.city || null,
           visibility: data.profileVisibility || "private",
+          workoutPreferences,
           updatedAt: new Date(),
         },
       });

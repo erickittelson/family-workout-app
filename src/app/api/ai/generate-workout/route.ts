@@ -21,6 +21,13 @@ import {
   getTrainingGoalForPrompt,
   getSportProtocolForPrompt,
   getVolumeGuidance,
+  getWorkoutGenerationConfigForPrompt,
+  getExerciseCountForDuration,
+  getWorkoutPreset,
+  getIntensityLevel,
+  getRestPeriodConfig,
+  getRepRangeForGoal,
+  applyIntensityModifiers,
 } from "@/lib/ai/schemas/loader";
 
 export const runtime = "nodejs";
@@ -261,7 +268,44 @@ export async function POST(request: Request) {
       sport,
       // Workout structure preference
       workoutStructure,
+      // New parameters from workout-generation-config.yaml
+      preset, // e.g., "quick_pump", "strength_session", "hiit_circuit"
+      volumeGoal, // e.g., "strength", "hypertrophy", "endurance", "power"
+      periodizationPhase, // e.g., "accumulation", "intensification", "deload"
+      muscleRecoveryOverride, // Override recovery recommendations
+      enableTempo = false, // Include tempo prescriptions
     } = body;
+
+    // If a preset is specified, use its default values
+    let effectiveIntensity = intensity;
+    let effectiveDuration = targetDuration;
+    let effectiveRestPreference = restPreference;
+    let effectiveExerciseCountRange: { min: number; max: number } | null = null;
+
+    if (preset) {
+      const presetConfig = getWorkoutPreset(preset);
+      if (presetConfig) {
+        effectiveIntensity = presetConfig.intensity;
+        effectiveDuration = presetConfig.duration;
+        effectiveRestPreference = presetConfig.rest_periods;
+        effectiveExerciseCountRange = {
+          min: presetConfig.exercise_count[0],
+          max: presetConfig.exercise_count[1],
+        };
+      }
+    }
+
+    // Get exercise count based on duration if not specified by preset
+    if (!effectiveExerciseCountRange) {
+      effectiveExerciseCountRange = getExerciseCountForDuration(effectiveDuration);
+    }
+
+    // Get intensity-specific configuration
+    const intensityConfig = getIntensityLevel(effectiveIntensity);
+    const restConfig = getRestPeriodConfig(effectiveRestPreference);
+    
+    // Get rep ranges based on volume goal
+    const repRanges = volumeGoal ? getRepRangeForGoal(volumeGoal) : null;
 
     // Support both single memberId and array of memberIds
     let memberIdArray: string[] = [];
@@ -573,33 +617,36 @@ No specific equipment has been listed. Include a mix of:
     // Calculate approximate time allocations
     const warmupTime = includeWarmup ? 5 : 0;
     const cooldownTime = includeCooldown ? 5 : 0;
-    const mainWorkoutTime = targetDuration - warmupTime - cooldownTime;
+    const mainWorkoutTime = effectiveDuration - warmupTime - cooldownTime;
 
-    // Rest time per set based on preference
-    const restTimePerSet = restPreference === "short" ? 40 : restPreference === "standard" ? 75 : 150;
+    // Rest time per set based on preference (use config values)
+    const restTimePerSet = restConfig.between_sets[0] + 
+      (restConfig.between_sets[1] - restConfig.between_sets[0]) / 2;
 
     // Average time per set (30-60 seconds of work depending on reps)
     const avgSetDuration = 45; // seconds for actual lifting
     const avgTimePerSet = (avgSetDuration + restTimePerSet) / 60; // minutes per set including rest
 
-    // Calculate recommended exercise count based on duration
-    // This is MORE IMPORTANT than the math - we want substantial workouts
-    // Base: 5 exercises per 30 min, +2 for each additional 15 min
-    const baseExercises = Math.ceil(targetDuration / 10); // ~3 for 30min, ~5 for 45min, ~6 for 60min
+    // Calculate recommended exercise count based on duration using config
+    // Use the config-derived exercise count range if available
+    const configExerciseCount = effectiveExerciseCountRange || getExerciseCountForDuration(effectiveDuration);
     const recommendedExercises = Math.max(
-      6, // Absolute minimum is 6 exercises
-      Math.min(12, baseExercises + 3) // Cap at 12
+      configExerciseCount.min,
+      Math.min(configExerciseCount.max, Math.ceil(effectiveDuration / 8)) // Scale with duration
     );
+    const maxExercises = configExerciseCount.max;
+    
     // For reference in prompts
     const totalSetsCapacity = Math.floor(mainWorkoutTime / avgTimePerSet);
 
     contextPrompt += `\n## Workout Focus
 ${workoutFocus}
+${preset ? `**Using Preset: ${preset}**\n` : ""}
 
 ## Workout Parameters
-- **Target Duration**: ${targetDuration} minutes (STRICTLY follow this)
-- **Intensity Level**: ${intensityDescriptions[intensity] || intensityDescriptions.moderate}
-- **Rest Preference**: ${restDescriptions[restPreference] || restDescriptions.standard}
+- **Target Duration**: ${effectiveDuration} minutes (STRICTLY follow this)
+- **Intensity Level**: ${intensityConfig.label} - ${intensityConfig.description} (RPE ${intensityConfig.rpe_range[0]}-${intensityConfig.rpe_range[1]})
+- **Rest Preference**: ${restConfig.description} (${restConfig.between_sets[0]}-${restConfig.between_sets[1]}s between sets)
 - **Include Warmup**: ${includeWarmup ? "Yes - include dynamic warmup exercises (~5 min)" : "No - skip warmup section"}
 - **Include Cooldown**: ${includeCooldown ? "Yes - include cooldown/stretches (~5 min)" : "No - skip cooldown section"}
 
@@ -608,16 +655,16 @@ You have **${mainWorkoutTime} minutes** for the main workout (excluding warmup/c
 
 **Time per set calculation:**
 - Set execution time: ~30-60 seconds (varies by reps)
-- Rest between sets: ${restPreference === "short" ? "30-45 sec" : restPreference === "standard" ? "60-90 sec" : "2-3 min"}
+- Rest between sets: ${restConfig.between_sets[0]}-${restConfig.between_sets[1]} seconds
 - Average total per set: ~${avgTimePerSet.toFixed(1)} minutes
 
-**Exercise count guidelines for ${targetDuration}-minute workout:**
-- With ${restPreference} rest: You can fit approximately **${totalSetsCapacity} total sets**
-- This means **${recommendedExercises}-${Math.min(recommendedExercises + 2, 12)} exercises** with 3-4 sets each
+**Exercise count guidelines for ${effectiveDuration}-minute workout:**
+- With ${effectiveRestPreference} rest: You can fit approximately **${totalSetsCapacity} total sets**
+- This means **${recommendedExercises}-${maxExercises} exercises** with 3-4 sets each
 
 **Time-saving techniques to include more volume:**
 1. **Supersets**: Pair opposing muscle groups (e.g., bench + rows) - do back-to-back with no rest between
-2. **Giant Sets**: 3+ exercises in a row - great for ${targetDuration >= 45 ? "high volume in limited time" : "quick workouts"}
+2. **Giant Sets**: 3+ exercises in a row - great for ${effectiveDuration >= 45 ? "high volume in limited time" : "quick workouts"}
 3. **Drop Sets**: Multiple sets with decreasing weight, minimal rest
 4. **Circuit Training**: Multiple exercises with minimal rest between
 
@@ -720,8 +767,8 @@ You can use these structure types to create varied, interesting workouts:
 - Multiple exercises can share same amrap/circuit grouping
 
 CRITICAL RULES:
-1. **EXERCISE COUNT IS CRITICAL**: You MUST include ${recommendedExercises}-${Math.min(recommendedExercises + 2, 12)} exercises to fill ${targetDuration} minutes. 4 exercises is NOT enough for a 60-min workout!
-2. **TIME MATH**: Calculate total time = (sets × ~${avgTimePerSet.toFixed(1)} min/set) + warmup (${warmupTime}min) + cooldown (${cooldownTime}min). estimatedDuration MUST equal ${targetDuration}.
+1. **EXERCISE COUNT IS CRITICAL**: You MUST include ${recommendedExercises}-${maxExercises} exercises to fill ${effectiveDuration} minutes. 4 exercises is NOT enough for a 60-min workout!
+2. **TIME MATH**: Calculate total time = (sets × ~${avgTimePerSet.toFixed(1)} min/set) + warmup (${warmupTime}min) + cooldown (${cooldownTime}min). estimatedDuration MUST equal ${effectiveDuration}.
 3. **WEIGHT PRESCRIPTIONS ARE MANDATORY**: Every exercise MUST have memberPrescriptions for EACH member with calculated weights from their maxes, or cardio targets, or bodyweight modifications.
 4. **🚨 SUPERSET VALIDATION**: If you use supersetGroup, that group MUST have AT LEAST 2 exercises with the same supersetGroup number! A single exercise cannot be a "superset". If you mention "paired with X" in notes, X MUST also be in the exercises array with the same supersetGroup.
 5. **🚨 ALL EXERCISES MUST BE IN THE ARRAY**: Do NOT mention exercises in notes that aren't in the exercises array. If you say "paired with Lat Pulldown", Lat Pulldown MUST be an exercise in your output.
@@ -734,8 +781,8 @@ CRITICAL RULES:
 12. Compound movements should come first, isolation exercises last
 13. Consider recovery - don't overload muscles worked in recent sessions
 ${hasEquipment ? "14. PRIORITIZE exercises that use the circle's available equipment" : "14. Focus on bodyweight and minimal equipment exercises"}
-15. MATCH THE INTENSITY LEVEL (${intensity}) - this affects % of 1RM used (high intensity = 80%+, moderate = 65-80%, low = 50-65%)
-16. USE THE REST PREFERENCE (${restPreference}) when setting rest between sets
+15. MATCH THE INTENSITY LEVEL (${effectiveIntensity}) - RPE ${intensityConfig.rpe_range[0]}-${intensityConfig.rpe_range[1]}
+16. USE THE REST PREFERENCE (${effectiveRestPreference}) when setting rest between sets (${restConfig.between_sets[0]}-${restConfig.between_sets[1]}s)
 17. **USE MEMBER'S LIFTING MAXES** to calculate working weights. If they have a 265 lb bench max and you want 70%, prescribe 185 lbs.
 18. For cardio exercises, prescribe specific targets (calories, distance, time) scaled to each member's fitness level
 19. For members learning skills, consider progressions and drills that help them achieve those skills
@@ -747,10 +794,74 @@ ${hasEquipment ? "14. PRIORITIZE exercises that use the circle's available equip
     const programmingRules = getProgrammingRulesForPrompt();
     contextPrompt += `\n\n${programmingRules}\n`;
 
+    // Add workout generation config based on provided parameters
+    const workoutGenConfig = getWorkoutGenerationConfigForPrompt({
+      intensity: effectiveIntensity,
+      duration: effectiveDuration,
+      preset,
+      goal: volumeGoal,
+      restPreference: effectiveRestPreference,
+    });
+    if (workoutGenConfig) {
+      contextPrompt += `\n\n## Workout Generation Configuration\n${workoutGenConfig}\n`;
+    }
+
+    // Add periodization phase context if specified
+    if (periodizationPhase) {
+      const phaseDescriptions: Record<string, string> = {
+        accumulation: `### Periodization Phase: ACCUMULATION (Volume Focus)
+- Focus on building work capacity
+- Higher rep ranges (8-15 reps)
+- Moderate intensity (65-75% 1RM)
+- Higher volume (more sets)
+- Shorter rest periods OK`,
+        intensification: `### Periodization Phase: INTENSIFICATION (Intensity Focus)
+- Focus on strength and neural adaptations
+- Lower rep ranges (3-8 reps)
+- Higher intensity (75-90% 1RM)
+- Moderate volume (fewer sets, heavier)
+- Longer rest periods needed`,
+        realization: `### Periodization Phase: REALIZATION (Peak/Testing)
+- Testing maxes or peak performance
+- Very low reps (1-3)
+- Maximum intensity (90-100% 1RM)
+- Low volume
+- Full recovery between sets (3-5 min)`,
+        deload: `### Periodization Phase: DELOAD (Recovery)
+- Reduced volume by 40-50%
+- Reduced intensity by 20-30%
+- Focus on movement quality
+- Allow full recovery
+- Maintain training stimulus without fatigue`,
+      };
+      if (phaseDescriptions[periodizationPhase]) {
+        contextPrompt += `\n\n${phaseDescriptions[periodizationPhase]}\n`;
+      }
+    }
+
+    // Add tempo prescription instructions if enabled
+    if (enableTempo) {
+      contextPrompt += `\n\n### TEMPO PRESCRIPTIONS (ENABLED)
+Include tempo notation for each exercise in the format: eccentric-pause_bottom-concentric-pause_top
+- Standard: 2-0-2-0 (controlled movement)
+- Controlled: 3-1-2-0 (slower eccentric with pause)
+- Explosive: 1-0-X-0 (fast concentric)
+- Time Under Tension: 4-2-4-0 (maximum TUT for hypertrophy)
+Add tempo prescription in the notes field when relevant.\n`;
+    }
+
     // Add training goal-specific context if provided
     if (trainingGoal) {
       const goalContext = getTrainingGoalForPrompt(trainingGoal);
       contextPrompt += `\n\n${goalContext}\n`;
+    }
+
+    // Add volume goal context for rep ranges
+    if (volumeGoal && repRanges) {
+      contextPrompt += `\n\n### Volume Goal: ${volumeGoal.toUpperCase()}
+- Primary Rep Range: ${repRanges.primary[0]}-${repRanges.primary[1]}
+- Secondary Rep Range: ${repRanges.secondary[0]}-${repRanges.secondary[1]}
+- Adjust rest periods based on rep ranges (higher reps = shorter rest)\n`;
     }
 
     // Add sport-specific protocol if provided
@@ -773,11 +884,14 @@ ${hasEquipment ? "14. PRIORITIZE exercises that use the circle's available equip
     const cacheKey = generateCacheKey("workout_generation", {
       memberIds: memberIdArray.sort(),
       focus: workoutFocus,
-      intensity,
-      targetDuration,
-      restPreference,
+      intensity: effectiveIntensity,
+      targetDuration: effectiveDuration,
+      restPreference: effectiveRestPreference,
       includeWarmup,
       includeCooldown,
+      preset,
+      volumeGoal,
+      periodizationPhase,
     });
 
     // Try to get cached response first
@@ -804,19 +918,19 @@ ${hasEquipment ? "14. PRIORITIZE exercises that use the circle's available equip
 Generate a workout now. Be efficient - you must respond within 30 seconds.
 
 ⚠️⚠️⚠️ CRITICAL EXERCISE COUNT REQUIREMENT ⚠️⚠️⚠️
-You MUST generate AT LEAST ${recommendedExercises} exercises (ideally ${recommendedExercises}-${Math.min(recommendedExercises + 2, 12)}).
-A ${targetDuration}-minute workout CANNOT have only 3-4 exercises - that would only fill 15-20 minutes!
+You MUST generate AT LEAST ${recommendedExercises} exercises (ideally ${recommendedExercises}-${maxExercises}).
+A ${effectiveDuration}-minute workout CANNOT have only 3-4 exercises - that would only fill 15-20 minutes!
 If you generate fewer than ${recommendedExercises} exercises, the workout will be REJECTED.
 
 Requirements:
 1. **MINIMUM ${recommendedExercises} EXERCISES** - this is non-negotiable
 2. Exercise names should match available exercises when possible
 3. All limitations are accommodated with alternatives
-4. Rep schemes match the ${intensity} intensity level
+4. Rep schemes match the ${effectiveIntensity} intensity level (RPE ${intensityConfig.rpe_range[0]}-${intensityConfig.rpe_range[1]})
 5. ${includeWarmup ? "Include a brief dynamic warmup (~5 min)" : "Skip the warmup section (set warmup to empty array)"}
 6. ${includeCooldown ? "Include a brief cooldown (~5 min)" : "Skip the cooldown section (set cooldown to empty array)"}
-7. Rest periods: ${restPreference === "short" ? "30-45s" : restPreference === "standard" ? "60-90s" : "2-3 min"}
-8. Total workout: ${targetDuration} minutes
+7. Rest periods: ${restConfig.between_sets[0]}-${restConfig.between_sets[1]}s
+8. Total workout: ${effectiveDuration} minutes
 9. Use member's lifting maxes to calculate working weights
 10. Provide memberPrescriptions for each exercise
 
@@ -836,22 +950,22 @@ Generate a cohesive, purposeful workout with ${recommendedExercises}+ exercises.
 TASK: Analyze the members and plan the optimal workout.
 
 ⚠️⚠️⚠️ CRITICAL: EXERCISE COUNT REQUIREMENT ⚠️⚠️⚠️
-A ${targetDuration}-minute workout REQUIRES ${recommendedExercises}-${Math.min(recommendedExercises + 2, 12)} exercises.
+A ${effectiveDuration}-minute workout REQUIRES ${recommendedExercises}-${maxExercises} exercises.
 - 30-minute workout = minimum 5 exercises
 - 45-minute workout = minimum 7 exercises
 - 60-minute workout = minimum 8 exercises
 3-4 exercises is NEVER acceptable - that only fills 15-20 minutes!
 
 Think deeply about:
-1. **EXERCISE COUNT**: You need ${recommendedExercises}+ exercises to fill ${targetDuration} minutes properly
+1. **EXERCISE COUNT**: You need ${recommendedExercises}+ exercises to fill ${effectiveDuration} minutes properly
 2. Each member's current state, goals, limitations, lifting maxes, running times, and skills
-3. How to design a workout that benefits everyone within the ${targetDuration}-minute timeframe
-4. What exercises will give the best stimulus at ${intensity} intensity while respecting limitations
+3. How to design a workout that benefits everyone within the ${effectiveDuration}-minute timeframe
+4. What exercises will give the best stimulus at ${effectiveIntensity} intensity (RPE ${intensityConfig.rpe_range[0]}-${intensityConfig.rpe_range[1]}) while respecting limitations
 5. The optimal exercise order for this group
 6. What modifications are needed for different fitness levels or limitations
 7. How to incorporate skill progressions for members who are learning new skills
 8. How to use their lifting maxes to prescribe appropriate weights (e.g., 70% of 1RM for 8-12 reps)
-9. Rest periods that match the ${restPreference} preference
+9. Rest periods: ${restConfig.between_sets[0]}-${restConfig.between_sets[1]}s between sets
 
 Your exercisePlan array MUST have at least ${recommendedExercises} exercises!
 
@@ -873,19 +987,19 @@ Based on this analysis and plan:
 ${JSON.stringify(planningResultObj, null, 2)}
 
 ⚠️⚠️⚠️ CRITICAL EXERCISE COUNT REQUIREMENT ⚠️⚠️⚠️
-You MUST generate AT LEAST ${recommendedExercises} exercises (ideally ${recommendedExercises}-${Math.min(recommendedExercises + 2, 12)}).
-A ${targetDuration}-minute workout CANNOT have only 3-4 exercises - that would only fill 15-20 minutes!
+You MUST generate AT LEAST ${recommendedExercises} exercises (ideally ${recommendedExercises}-${maxExercises}).
+A ${effectiveDuration}-minute workout CANNOT have only 3-4 exercises - that would only fill 15-20 minutes!
 If you generate fewer than ${recommendedExercises} exercises, the workout will be REJECTED.
 
 Generate the final workout structure. Ensure:
-1. **MINIMUM ${recommendedExercises} EXERCISES** - this is non-negotiable for a ${targetDuration}-min workout
+1. **MINIMUM ${recommendedExercises} EXERCISES** - this is non-negotiable for a ${effectiveDuration}-min workout
 2. Exercise names EXACTLY match available exercises
 3. All limitations are accommodated with alternatives
-4. Rep schemes match the ${intensity} intensity level
+4. Rep schemes match the ${effectiveIntensity} intensity level (RPE ${intensityConfig.rpe_range[0]}-${intensityConfig.rpe_range[1]})
 5. ${includeWarmup ? "Include a dynamic warmup section" : "Skip the warmup section (set warmup to empty array)"}
 6. ${includeCooldown ? "Include a cooldown/stretching section" : "Skip the cooldown section (set cooldown to empty array)"}
-7. Rest periods match the ${restPreference} preference (${restPreference === "short" ? "30-45s" : restPreference === "standard" ? "60-90s" : "2-3 min"})
-8. Total workout fits within ${targetDuration} minutes (estimatedDuration should be close to ${targetDuration})
+7. Rest periods: ${restConfig.between_sets[0]}-${restConfig.between_sets[1]}s between sets
+8. Total workout fits within ${effectiveDuration} minutes (estimatedDuration should be close to ${effectiveDuration})
 9. When members have lifting maxes, use them to suggest appropriate weights in the notes (e.g., "Use ~70% of 1RM")
 10. Include time calculations in the reasoning field to verify the workout fits the target duration
 
@@ -966,13 +1080,13 @@ The workout should feel cohesive and purposeful with ${recommendedExercises}+ ex
     }
 
     // Validate exercise count - reject if too few
-    // Minimum 5 exercises for any workout, scaling up with duration
-    const minExercises = Math.max(5, Math.floor(targetDuration / 10)); // 5 for 45min, 6 for 60min
+    // Use the config-derived minimum
+    const minExercises = effectiveExerciseCountRange?.min || Math.max(5, Math.floor(effectiveDuration / 10));
     if (workout.exercises.length < minExercises) {
       console.error(`Workout rejected: only ${workout.exercises.length} exercises, need at least ${minExercises}`);
       return Response.json(
         {
-          error: `Generated workout only has ${workout.exercises.length} exercises, but a ${targetDuration}-minute workout needs at least ${minExercises}. Please try again.`,
+          error: `Generated workout only has ${workout.exercises.length} exercises, but a ${effectiveDuration}-minute workout needs at least ${minExercises}. Please try again.`,
           details: "The AI generated too few exercises for the requested duration.",
         },
         { status: 400 }

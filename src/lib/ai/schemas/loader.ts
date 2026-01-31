@@ -1064,6 +1064,281 @@ ${Object.entries(s.sprint_phases)
 }
 
 // =============================================================================
+// WORKOUT GENERATION CONFIG
+// =============================================================================
+
+export interface WorkoutGenerationConfig {
+  workout_generation_config: {
+    version: string;
+    intensity: {
+      levels: Record<string, {
+        label: string;
+        description: string;
+        rpe_range: [number, number];
+        volume_modifier: number;
+        rest_modifier: number;
+      }>;
+      default: string;
+    };
+    duration: {
+      options: number[];
+      exercise_count_mapping: Record<string, {
+        min: number;
+        max: number;
+        typical_structure: string;
+      }>;
+      time_per_exercise: {
+        compound: { warmup_sets: number; working_sets: number; rest_between_sets: number };
+        isolation: { warmup_sets: number; working_sets: number; rest_between_sets: number };
+        cardio: { per_set: number; rest_between_sets: number };
+      };
+      default: number;
+    };
+    volume: {
+      sets_per_muscle_weekly: {
+        absolute_minimum: number;
+        minimum_effective: number;
+        maximum_effective: number;
+        diminishing_returns: number;
+        by_goal: Record<string, { min: number; max: number; description: string }>;
+      };
+      sets_per_exercise: Record<string, { min: number; max: number; typical: number }>;
+      rep_ranges: Record<string, { primary: [number, number]; secondary: [number, number] }>;
+    };
+    exercise_selection: {
+      variety: {
+        avoid_same_exercise_within_days: number;
+        max_same_exercise_per_week: number;
+        min_unique_exercises_per_muscle: number;
+      };
+      compound_isolation_ratio: Record<string, { compound: number; isolation: number; description: string }>;
+      movement_patterns: { upper: string[]; lower: string[] };
+      pattern_priority: Record<string, string[]>;
+    };
+    tempo: {
+      enabled: boolean;
+      presets: Record<string, { value: string; description: string }>;
+      by_exercise_type: Record<string, string>;
+    };
+    presets: Record<string, {
+      label: string;
+      description: string;
+      duration: number;
+      intensity: string;
+      exercise_count: [number, number];
+      focus: string;
+      structure: string;
+      rest_periods: string;
+    }>;
+    rest_periods: {
+      categories: Record<string, {
+        between_sets: [number, number];
+        between_exercises: [number, number];
+        description: string;
+      }>;
+      by_exercise: Record<string, number>;
+    };
+    recovery_integration: {
+      enabled: boolean;
+      thresholds: Record<string, number>;
+      volume_adjustment: Record<string, number>;
+      prefer_fresh_muscles: boolean;
+    };
+    periodization: {
+      weekly_progression: {
+        volume_increase_rate: number;
+        intensity_increase_rate: number;
+        max_weeks_before_deload: number;
+      };
+      deload: {
+        frequency_weeks: number;
+        volume_reduction: number;
+        intensity_reduction: number;
+        duration_reduction: number;
+      };
+      mesocycle: {
+        typical_length_weeks: number;
+        phases: string[];
+      };
+    };
+  };
+}
+
+/**
+ * Load workout generation configuration
+ */
+export function getWorkoutGenerationConfig(): WorkoutGenerationConfig {
+  return loadYaml<WorkoutGenerationConfig>("workout-generation-config.yaml");
+}
+
+/**
+ * Get intensity level configuration
+ */
+export function getIntensityLevel(level: string) {
+  const config = getWorkoutGenerationConfig();
+  return config.workout_generation_config.intensity.levels[level] ||
+    config.workout_generation_config.intensity.levels.moderate;
+}
+
+/**
+ * Get workout preset configuration
+ */
+export function getWorkoutPreset(presetName: string) {
+  const config = getWorkoutGenerationConfig();
+  return config.workout_generation_config.presets[presetName];
+}
+
+/**
+ * Get exercise count for duration
+ */
+export function getExerciseCountForDuration(durationMinutes: number): { min: number; max: number } {
+  const config = getWorkoutGenerationConfig();
+  const mapping = config.workout_generation_config.duration.exercise_count_mapping;
+  const durationKey = String(durationMinutes);
+  
+  if (mapping[durationKey]) {
+    return { min: mapping[durationKey].min, max: mapping[durationKey].max };
+  }
+  
+  // Find closest duration
+  const durations = Object.keys(mapping).map(Number).sort((a, b) => a - b);
+  const closest = durations.reduce((prev, curr) => 
+    Math.abs(curr - durationMinutes) < Math.abs(prev - durationMinutes) ? curr : prev
+  );
+  
+  return { min: mapping[String(closest)].min, max: mapping[String(closest)].max };
+}
+
+/**
+ * Get rest period config
+ */
+export function getRestPeriodConfig(category: string) {
+  const config = getWorkoutGenerationConfig();
+  return config.workout_generation_config.rest_periods.categories[category] ||
+    config.workout_generation_config.rest_periods.categories.moderate;
+}
+
+/**
+ * Get volume config for a goal
+ */
+export function getVolumeConfigForGoal(goal: string) {
+  const config = getWorkoutGenerationConfig();
+  return config.workout_generation_config.volume.sets_per_muscle_weekly.by_goal[goal];
+}
+
+/**
+ * Get rep range for a goal
+ */
+export function getRepRangeForGoal(goal: string): { primary: [number, number]; secondary: [number, number] } {
+  const config = getWorkoutGenerationConfig();
+  return config.workout_generation_config.volume.rep_ranges[goal] ||
+    config.workout_generation_config.volume.rep_ranges.hypertrophy;
+}
+
+/**
+ * Get compound/isolation ratio for goal
+ */
+export function getCompoundIsolationRatio(goal: string) {
+  const config = getWorkoutGenerationConfig();
+  return config.workout_generation_config.exercise_selection.compound_isolation_ratio[goal] ||
+    config.workout_generation_config.exercise_selection.compound_isolation_ratio.hypertrophy;
+}
+
+/**
+ * Generate workout generation config for prompt
+ */
+export function getWorkoutGenerationConfigForPrompt(
+  options: {
+    intensity?: string;
+    duration?: number;
+    preset?: string;
+    goal?: string;
+    restPreference?: string;
+  }
+): string {
+  const config = getWorkoutGenerationConfig().workout_generation_config;
+  const parts: string[] = [];
+  
+  // Intensity configuration
+  if (options.intensity) {
+    const intensityConfig = config.intensity.levels[options.intensity];
+    if (intensityConfig) {
+      parts.push(`### Intensity: ${intensityConfig.label}
+${intensityConfig.description}
+- RPE Target: ${intensityConfig.rpe_range[0]}-${intensityConfig.rpe_range[1]}
+- Volume Modifier: ${intensityConfig.volume_modifier}x
+- Rest Modifier: ${intensityConfig.rest_modifier}x`);
+    }
+  }
+  
+  // Duration-based exercise count
+  if (options.duration) {
+    const exerciseCount = getExerciseCountForDuration(options.duration);
+    parts.push(`### Duration Guidelines for ${options.duration} Minutes
+- Exercise Count: ${exerciseCount.min}-${exerciseCount.max} exercises
+- Use the time wisely with efficient exercise selection`);
+  }
+  
+  // Goal-specific volume
+  if (options.goal) {
+    const volumeConfig = config.volume.sets_per_muscle_weekly.by_goal[options.goal];
+    const repRange = config.volume.rep_ranges[options.goal];
+    const ratio = config.exercise_selection.compound_isolation_ratio[options.goal];
+    
+    if (volumeConfig && repRange) {
+      parts.push(`### Goal-Specific Programming: ${options.goal}
+- Sets per muscle weekly: ${volumeConfig.min}-${volumeConfig.max}
+- Primary rep range: ${repRange.primary[0]}-${repRange.primary[1]}
+- Secondary rep range: ${repRange.secondary[0]}-${repRange.secondary[1]}
+${ratio ? `- Compound/Isolation ratio: ${ratio.compound * 100}% compound / ${ratio.isolation * 100}% isolation` : ""}`);
+    }
+  }
+  
+  // Rest preference
+  if (options.restPreference) {
+    const restConfig = config.rest_periods.categories[options.restPreference];
+    if (restConfig) {
+      parts.push(`### Rest Periods: ${restConfig.description}
+- Between Sets: ${restConfig.between_sets[0]}-${restConfig.between_sets[1]} seconds
+- Between Exercises: ${restConfig.between_exercises[0]}-${restConfig.between_exercises[1]} seconds`);
+    }
+  }
+  
+  // Preset
+  if (options.preset) {
+    const presetConfig = config.presets[options.preset];
+    if (presetConfig) {
+      parts.push(`### Using Preset: ${presetConfig.label}
+${presetConfig.description}
+- Duration: ${presetConfig.duration} min
+- Intensity: ${presetConfig.intensity}
+- Exercise Count: ${presetConfig.exercise_count[0]}-${presetConfig.exercise_count[1]}
+- Focus: ${presetConfig.focus}
+- Structure: ${presetConfig.structure}
+- Rest: ${presetConfig.rest_periods}`);
+    }
+  }
+  
+  return parts.join("\n\n");
+}
+
+/**
+ * Apply intensity modifiers to workout parameters
+ */
+export function applyIntensityModifiers(
+  baseParams: { volume: number; rest: number; rpe: number },
+  intensity: string
+): { volume: number; rest: number; rpe: number } {
+  const intensityConfig = getIntensityLevel(intensity);
+  
+  return {
+    volume: Math.round(baseParams.volume * intensityConfig.volume_modifier),
+    rest: Math.round(baseParams.rest * intensityConfig.rest_modifier),
+    rpe: intensityConfig.rpe_range[0] + (intensityConfig.rpe_range[1] - intensityConfig.rpe_range[0]) / 2,
+  };
+}
+
+// =============================================================================
 // COMBINED PROMPT BUILDER
 // =============================================================================
 

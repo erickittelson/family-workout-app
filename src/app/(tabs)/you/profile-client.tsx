@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   User,
   Heart,
   Trophy,
@@ -63,6 +69,9 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  Check,
+  X,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/neon-auth/client";
@@ -193,6 +202,16 @@ interface ProfilePageProps {
       caption?: string;
       uploadedAt: string;
     }>;
+    fieldVisibility?: {
+      bio?: "public" | "circles" | "private";
+      city?: "public" | "circles" | "private";
+      metrics?: "public" | "circles" | "private";
+      sports?: "public" | "circles" | "private";
+      skills?: "public" | "circles" | "private";
+      prs?: "public" | "circles" | "private";
+      badges?: "public" | "circles" | "private";
+      socialLinks?: "public" | "circles" | "private";
+    };
   } | null;
   metrics: MetricsData | null;
   limitations: LimitationData[];
@@ -231,7 +250,7 @@ interface ProfilePageProps {
 }
 
 // ==================== CONSTANTS ====================
-const SKILL_CATEGORIES = ["Gymnastics", "Strength", "Mobility", "Cardio", "Olympic Lifting", "Calisthenics", "Balance", "Other"];
+const SKILL_CATEGORIES = ["Gymnastics", "Strength", "Mobility", "Cardio", "Olympic Lifting", "Calisthenics", "Balance", "Martial Arts", "Swimming", "Running", "Other"];
 const SKILL_STATUSES = [
   { value: "not_started", label: "Not Started" },
   { value: "learning", label: "Learning" },
@@ -239,6 +258,348 @@ const SKILL_STATUSES = [
   { value: "mastered", label: "Mastered" },
 ];
 const PR_UNITS = ["lbs", "kg", "reps", "seconds", "minutes", "miles", "km"];
+
+// Comprehensive Skills Database
+const SKILLS_DATABASE: { name: string; category: string; difficulty: string }[] = [
+  // Gymnastics
+  { name: "Muscle Up", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Bar Muscle Up", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Ring Muscle Up", category: "Gymnastics", difficulty: "Elite" },
+  { name: "Handstand", category: "Gymnastics", difficulty: "Intermediate" },
+  { name: "Handstand Walk", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Handstand Push Up", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Strict Handstand Push Up", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Kipping Handstand Push Up", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Freestanding Handstand", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Cartwheel", category: "Gymnastics", difficulty: "Beginner" },
+  { name: "Round Off", category: "Gymnastics", difficulty: "Intermediate" },
+  { name: "Back Walkover", category: "Gymnastics", difficulty: "Intermediate" },
+  { name: "Front Walkover", category: "Gymnastics", difficulty: "Intermediate" },
+  { name: "Back Handspring", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Front Handspring", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Back Tuck", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Front Tuck", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Back Layout", category: "Gymnastics", difficulty: "Elite" },
+  { name: "Front Layout", category: "Gymnastics", difficulty: "Elite" },
+  { name: "Kip Up", category: "Gymnastics", difficulty: "Intermediate" },
+  { name: "Rope Climb", category: "Gymnastics", difficulty: "Intermediate" },
+  { name: "Legless Rope Climb", category: "Gymnastics", difficulty: "Advanced" },
+  { name: "Pegboard", category: "Gymnastics", difficulty: "Elite" },
+  
+  // Calisthenics
+  { name: "Pull Up", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Strict Pull Up", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Kipping Pull Up", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Butterfly Pull Up", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "Weighted Pull Up", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Chin Up", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Chest to Bar Pull Up", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Push Up", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Diamond Push Up", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "One Arm Push Up", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "Clapping Push Up", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Dip", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Ring Dip", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Weighted Dip", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Pistol Squat", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "Shrimp Squat", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "L-Sit", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "V-Sit", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "Toes to Bar", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Knees to Elbows", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Skin the Cat", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Front Lever", category: "Calisthenics", difficulty: "Elite" },
+  { name: "Back Lever", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "Planche", category: "Calisthenics", difficulty: "Elite" },
+  { name: "Straddle Planche", category: "Calisthenics", difficulty: "Elite" },
+  { name: "Human Flag", category: "Calisthenics", difficulty: "Elite" },
+  { name: "Dragon Flag", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "Hanging Leg Raise", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Ab Wheel Rollout", category: "Calisthenics", difficulty: "Intermediate" },
+  { name: "Standing Ab Wheel", category: "Calisthenics", difficulty: "Advanced" },
+  { name: "Hollow Body Hold", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Arch Body Hold", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Inverted Row", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Box Jump", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Burpee", category: "Calisthenics", difficulty: "Beginner" },
+  { name: "Burpee Box Jump Over", category: "Calisthenics", difficulty: "Intermediate" },
+  
+  // Olympic Lifting
+  { name: "Snatch", category: "Olympic Lifting", difficulty: "Advanced" },
+  { name: "Power Snatch", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Squat Snatch", category: "Olympic Lifting", difficulty: "Advanced" },
+  { name: "Hang Snatch", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Snatch Balance", category: "Olympic Lifting", difficulty: "Advanced" },
+  { name: "Overhead Squat", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Clean", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Power Clean", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Squat Clean", category: "Olympic Lifting", difficulty: "Advanced" },
+  { name: "Hang Clean", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Clean & Jerk", category: "Olympic Lifting", difficulty: "Advanced" },
+  { name: "Jerk", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Push Jerk", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Split Jerk", category: "Olympic Lifting", difficulty: "Advanced" },
+  { name: "Push Press", category: "Olympic Lifting", difficulty: "Beginner" },
+  { name: "Thruster", category: "Olympic Lifting", difficulty: "Intermediate" },
+  { name: "Cluster", category: "Olympic Lifting", difficulty: "Advanced" },
+  
+  // Strength
+  { name: "Bench Press", category: "Strength", difficulty: "Beginner" },
+  { name: "Incline Bench Press", category: "Strength", difficulty: "Beginner" },
+  { name: "Decline Bench Press", category: "Strength", difficulty: "Beginner" },
+  { name: "Deadlift", category: "Strength", difficulty: "Beginner" },
+  { name: "Sumo Deadlift", category: "Strength", difficulty: "Intermediate" },
+  { name: "Romanian Deadlift", category: "Strength", difficulty: "Beginner" },
+  { name: "Deficit Deadlift", category: "Strength", difficulty: "Intermediate" },
+  { name: "Back Squat", category: "Strength", difficulty: "Beginner" },
+  { name: "Front Squat", category: "Strength", difficulty: "Intermediate" },
+  { name: "Goblet Squat", category: "Strength", difficulty: "Beginner" },
+  { name: "Bulgarian Split Squat", category: "Strength", difficulty: "Intermediate" },
+  { name: "Overhead Press", category: "Strength", difficulty: "Beginner" },
+  { name: "Strict Press", category: "Strength", difficulty: "Beginner" },
+  { name: "Military Press", category: "Strength", difficulty: "Beginner" },
+  { name: "Z Press", category: "Strength", difficulty: "Intermediate" },
+  { name: "Barbell Row", category: "Strength", difficulty: "Beginner" },
+  { name: "Pendlay Row", category: "Strength", difficulty: "Intermediate" },
+  { name: "Lat Pulldown", category: "Strength", difficulty: "Beginner" },
+  { name: "Hip Thrust", category: "Strength", difficulty: "Beginner" },
+  { name: "Good Morning", category: "Strength", difficulty: "Intermediate" },
+  { name: "Farmers Carry", category: "Strength", difficulty: "Beginner" },
+  { name: "Turkish Get Up", category: "Strength", difficulty: "Intermediate" },
+  { name: "Sled Push", category: "Strength", difficulty: "Beginner" },
+  { name: "Sled Pull", category: "Strength", difficulty: "Beginner" },
+  { name: "Zercher Squat", category: "Strength", difficulty: "Advanced" },
+  { name: "Jefferson Deadlift", category: "Strength", difficulty: "Intermediate" },
+  { name: "Atlas Stone", category: "Strength", difficulty: "Advanced" },
+  { name: "Log Press", category: "Strength", difficulty: "Advanced" },
+  { name: "Axle Press", category: "Strength", difficulty: "Intermediate" },
+  { name: "Yoke Walk", category: "Strength", difficulty: "Intermediate" },
+  
+  // Mobility
+  { name: "Full Splits", category: "Mobility", difficulty: "Advanced" },
+  { name: "Middle Splits", category: "Mobility", difficulty: "Advanced" },
+  { name: "Front Splits", category: "Mobility", difficulty: "Advanced" },
+  { name: "Deep Squat", category: "Mobility", difficulty: "Beginner" },
+  { name: "Overhead Squat Mobility", category: "Mobility", difficulty: "Intermediate" },
+  { name: "Pike Stretch", category: "Mobility", difficulty: "Beginner" },
+  { name: "Pancake Stretch", category: "Mobility", difficulty: "Intermediate" },
+  { name: "Bridge", category: "Mobility", difficulty: "Beginner" },
+  { name: "Full Bridge", category: "Mobility", difficulty: "Intermediate" },
+  { name: "Standing Bridge", category: "Mobility", difficulty: "Advanced" },
+  { name: "Jefferson Curl", category: "Mobility", difficulty: "Intermediate" },
+  { name: "Hip Flexor Stretch", category: "Mobility", difficulty: "Beginner" },
+  { name: "Pigeon Pose", category: "Mobility", difficulty: "Beginner" },
+  { name: "Shoulder Dislocates", category: "Mobility", difficulty: "Beginner" },
+  { name: "Thoracic Bridge", category: "Mobility", difficulty: "Intermediate" },
+  { name: "Cossack Squat", category: "Mobility", difficulty: "Intermediate" },
+  
+  // Balance
+  { name: "Crow Pose", category: "Balance", difficulty: "Beginner" },
+  { name: "Crane Pose", category: "Balance", difficulty: "Intermediate" },
+  { name: "Side Crow", category: "Balance", difficulty: "Intermediate" },
+  { name: "Flying Crow", category: "Balance", difficulty: "Advanced" },
+  { name: "Headstand", category: "Balance", difficulty: "Beginner" },
+  { name: "Forearm Stand", category: "Balance", difficulty: "Intermediate" },
+  { name: "Single Leg Balance", category: "Balance", difficulty: "Beginner" },
+  { name: "Slackline Walking", category: "Balance", difficulty: "Intermediate" },
+  { name: "Bosu Ball Balance", category: "Balance", difficulty: "Beginner" },
+  
+  // Cardio
+  { name: "Double Unders", category: "Cardio", difficulty: "Intermediate" },
+  { name: "Triple Unders", category: "Cardio", difficulty: "Elite" },
+  { name: "Crossover Double Unders", category: "Cardio", difficulty: "Advanced" },
+  { name: "5K Run", category: "Cardio", difficulty: "Beginner" },
+  { name: "10K Run", category: "Cardio", difficulty: "Intermediate" },
+  { name: "Half Marathon", category: "Cardio", difficulty: "Advanced" },
+  { name: "Marathon", category: "Cardio", difficulty: "Elite" },
+  { name: "Sub-6 Minute Mile", category: "Cardio", difficulty: "Advanced" },
+  { name: "Sub-5 Minute Mile", category: "Cardio", difficulty: "Elite" },
+  { name: "2K Row", category: "Cardio", difficulty: "Intermediate" },
+  { name: "5K Row", category: "Cardio", difficulty: "Intermediate" },
+  { name: "Assault Bike Calories", category: "Cardio", difficulty: "Intermediate" },
+  { name: "Ski Erg", category: "Cardio", difficulty: "Intermediate" },
+  
+  // Martial Arts
+  { name: "Front Kick", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Roundhouse Kick", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Side Kick", category: "Martial Arts", difficulty: "Intermediate" },
+  { name: "Spinning Back Kick", category: "Martial Arts", difficulty: "Advanced" },
+  { name: "Head Kick", category: "Martial Arts", difficulty: "Intermediate" },
+  { name: "Flying Knee", category: "Martial Arts", difficulty: "Advanced" },
+  { name: "Tornado Kick", category: "Martial Arts", difficulty: "Advanced" },
+  { name: "Armbar", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Triangle Choke", category: "Martial Arts", difficulty: "Intermediate" },
+  { name: "Rear Naked Choke", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Guillotine", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Kimura", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Americana", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Heel Hook", category: "Martial Arts", difficulty: "Advanced" },
+  { name: "Berimbolo", category: "Martial Arts", difficulty: "Advanced" },
+  { name: "Rubber Guard", category: "Martial Arts", difficulty: "Intermediate" },
+  { name: "Hip Escape", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Technical Stand Up", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Double Leg Takedown", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Single Leg Takedown", category: "Martial Arts", difficulty: "Beginner" },
+  { name: "Hip Throw", category: "Martial Arts", difficulty: "Intermediate" },
+  
+  // Swimming
+  { name: "Freestyle", category: "Swimming", difficulty: "Beginner" },
+  { name: "Backstroke", category: "Swimming", difficulty: "Beginner" },
+  { name: "Breaststroke", category: "Swimming", difficulty: "Intermediate" },
+  { name: "Butterfly", category: "Swimming", difficulty: "Advanced" },
+  { name: "Flip Turn", category: "Swimming", difficulty: "Intermediate" },
+  { name: "Open Water Swimming", category: "Swimming", difficulty: "Intermediate" },
+  { name: "Treading Water", category: "Swimming", difficulty: "Beginner" },
+  { name: "Diving", category: "Swimming", difficulty: "Intermediate" },
+];
+
+// Comprehensive Exercises Database for PRs
+const EXERCISES_DATABASE: { name: string; category: string; unit: string }[] = [
+  // Barbell Strength
+  { name: "Bench Press", category: "Barbell", unit: "lbs" },
+  { name: "Incline Bench Press", category: "Barbell", unit: "lbs" },
+  { name: "Close Grip Bench Press", category: "Barbell", unit: "lbs" },
+  { name: "Floor Press", category: "Barbell", unit: "lbs" },
+  { name: "Deadlift", category: "Barbell", unit: "lbs" },
+  { name: "Sumo Deadlift", category: "Barbell", unit: "lbs" },
+  { name: "Romanian Deadlift", category: "Barbell", unit: "lbs" },
+  { name: "Stiff Leg Deadlift", category: "Barbell", unit: "lbs" },
+  { name: "Deficit Deadlift", category: "Barbell", unit: "lbs" },
+  { name: "Block Pull", category: "Barbell", unit: "lbs" },
+  { name: "Back Squat", category: "Barbell", unit: "lbs" },
+  { name: "Front Squat", category: "Barbell", unit: "lbs" },
+  { name: "Overhead Squat", category: "Barbell", unit: "lbs" },
+  { name: "Box Squat", category: "Barbell", unit: "lbs" },
+  { name: "Pause Squat", category: "Barbell", unit: "lbs" },
+  { name: "Overhead Press", category: "Barbell", unit: "lbs" },
+  { name: "Push Press", category: "Barbell", unit: "lbs" },
+  { name: "Push Jerk", category: "Barbell", unit: "lbs" },
+  { name: "Split Jerk", category: "Barbell", unit: "lbs" },
+  { name: "Barbell Row", category: "Barbell", unit: "lbs" },
+  { name: "Pendlay Row", category: "Barbell", unit: "lbs" },
+  { name: "Barbell Curl", category: "Barbell", unit: "lbs" },
+  { name: "Skull Crushers", category: "Barbell", unit: "lbs" },
+  { name: "Hip Thrust", category: "Barbell", unit: "lbs" },
+  { name: "Good Morning", category: "Barbell", unit: "lbs" },
+  { name: "Zercher Squat", category: "Barbell", unit: "lbs" },
+  { name: "Hack Squat", category: "Barbell", unit: "lbs" },
+  
+  // Olympic Lifts
+  { name: "Snatch", category: "Olympic", unit: "lbs" },
+  { name: "Power Snatch", category: "Olympic", unit: "lbs" },
+  { name: "Hang Snatch", category: "Olympic", unit: "lbs" },
+  { name: "Snatch Balance", category: "Olympic", unit: "lbs" },
+  { name: "Snatch Grip Deadlift", category: "Olympic", unit: "lbs" },
+  { name: "Clean", category: "Olympic", unit: "lbs" },
+  { name: "Power Clean", category: "Olympic", unit: "lbs" },
+  { name: "Hang Clean", category: "Olympic", unit: "lbs" },
+  { name: "Clean & Jerk", category: "Olympic", unit: "lbs" },
+  { name: "Clean Pull", category: "Olympic", unit: "lbs" },
+  { name: "Snatch Pull", category: "Olympic", unit: "lbs" },
+  { name: "Thruster", category: "Olympic", unit: "lbs" },
+  { name: "Cluster", category: "Olympic", unit: "lbs" },
+  
+  // Dumbbell
+  { name: "Dumbbell Bench Press", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Incline Press", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Shoulder Press", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Row", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Curl", category: "Dumbbell", unit: "lbs" },
+  { name: "Hammer Curl", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Tricep Extension", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Lunge", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Snatch", category: "Dumbbell", unit: "lbs" },
+  { name: "Dumbbell Clean", category: "Dumbbell", unit: "lbs" },
+  { name: "Goblet Squat", category: "Dumbbell", unit: "lbs" },
+  { name: "Turkish Get Up", category: "Dumbbell", unit: "lbs" },
+  
+  // Kettlebell
+  { name: "Kettlebell Swing", category: "Kettlebell", unit: "lbs" },
+  { name: "Kettlebell Snatch", category: "Kettlebell", unit: "lbs" },
+  { name: "Kettlebell Clean", category: "Kettlebell", unit: "lbs" },
+  { name: "Kettlebell Press", category: "Kettlebell", unit: "lbs" },
+  { name: "Kettlebell Goblet Squat", category: "Kettlebell", unit: "lbs" },
+  { name: "Kettlebell Turkish Get Up", category: "Kettlebell", unit: "lbs" },
+  
+  // Bodyweight - Reps
+  { name: "Pull Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Strict Pull Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Kipping Pull Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Chest to Bar Pull Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Muscle Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Bar Muscle Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Ring Muscle Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Chin Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Push Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Handstand Push Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Strict Handstand Push Ups", category: "Bodyweight", unit: "reps" },
+  { name: "Dips", category: "Bodyweight", unit: "reps" },
+  { name: "Ring Dips", category: "Bodyweight", unit: "reps" },
+  { name: "Toes to Bar", category: "Bodyweight", unit: "reps" },
+  { name: "Knees to Elbows", category: "Bodyweight", unit: "reps" },
+  { name: "Pistol Squats", category: "Bodyweight", unit: "reps" },
+  { name: "Box Jumps", category: "Bodyweight", unit: "reps" },
+  { name: "Burpees", category: "Bodyweight", unit: "reps" },
+  { name: "Double Unders", category: "Bodyweight", unit: "reps" },
+  { name: "Wall Balls", category: "Bodyweight", unit: "reps" },
+  { name: "Air Squats", category: "Bodyweight", unit: "reps" },
+  { name: "Sit Ups", category: "Bodyweight", unit: "reps" },
+  { name: "GHD Sit Ups", category: "Bodyweight", unit: "reps" },
+  { name: "GHD Hip Extensions", category: "Bodyweight", unit: "reps" },
+  
+  // Weighted Bodyweight
+  { name: "Weighted Pull Up", category: "Weighted", unit: "lbs" },
+  { name: "Weighted Dip", category: "Weighted", unit: "lbs" },
+  { name: "Weighted Chin Up", category: "Weighted", unit: "lbs" },
+  { name: "Weighted Pistol Squat", category: "Weighted", unit: "lbs" },
+  { name: "Weighted Muscle Up", category: "Weighted", unit: "lbs" },
+  
+  // Carries
+  { name: "Farmers Carry", category: "Carries", unit: "lbs" },
+  { name: "Yoke Walk", category: "Carries", unit: "lbs" },
+  { name: "Sandbag Carry", category: "Carries", unit: "lbs" },
+  { name: "Atlas Stone", category: "Carries", unit: "lbs" },
+  { name: "Sled Push", category: "Carries", unit: "lbs" },
+  { name: "Sled Pull", category: "Carries", unit: "lbs" },
+  
+  // Cardio - Time
+  { name: "500m Row", category: "Cardio", unit: "seconds" },
+  { name: "1K Row", category: "Cardio", unit: "seconds" },
+  { name: "2K Row", category: "Cardio", unit: "seconds" },
+  { name: "5K Row", category: "Cardio", unit: "seconds" },
+  { name: "400m Run", category: "Cardio", unit: "seconds" },
+  { name: "800m Run", category: "Cardio", unit: "seconds" },
+  { name: "1 Mile Run", category: "Cardio", unit: "seconds" },
+  { name: "5K Run", category: "Cardio", unit: "minutes" },
+  { name: "10K Run", category: "Cardio", unit: "minutes" },
+  { name: "Half Marathon", category: "Cardio", unit: "minutes" },
+  { name: "Marathon", category: "Cardio", unit: "minutes" },
+  { name: "100m Sprint", category: "Cardio", unit: "seconds" },
+  { name: "200m Sprint", category: "Cardio", unit: "seconds" },
+  { name: "Assault Bike 1 Mile", category: "Cardio", unit: "seconds" },
+  { name: "Assault Bike Calories", category: "Cardio", unit: "seconds" },
+  { name: "Ski Erg 1K", category: "Cardio", unit: "seconds" },
+  
+  // Holds - Time
+  { name: "Plank Hold", category: "Holds", unit: "seconds" },
+  { name: "L-Sit Hold", category: "Holds", unit: "seconds" },
+  { name: "Handstand Hold", category: "Holds", unit: "seconds" },
+  { name: "Dead Hang", category: "Holds", unit: "seconds" },
+  { name: "Wall Sit", category: "Holds", unit: "seconds" },
+  { name: "Hollow Body Hold", category: "Holds", unit: "seconds" },
+  
+  // Machine
+  { name: "Leg Press", category: "Machine", unit: "lbs" },
+  { name: "Leg Extension", category: "Machine", unit: "lbs" },
+  { name: "Leg Curl", category: "Machine", unit: "lbs" },
+  { name: "Lat Pulldown", category: "Machine", unit: "lbs" },
+  { name: "Cable Row", category: "Machine", unit: "lbs" },
+  { name: "Chest Press Machine", category: "Machine", unit: "lbs" },
+  { name: "Shoulder Press Machine", category: "Machine", unit: "lbs" },
+  { name: "Cable Fly", category: "Machine", unit: "lbs" },
+  { name: "Tricep Pushdown", category: "Machine", unit: "lbs" },
+  { name: "Cable Curl", category: "Machine", unit: "lbs" },
+];
 const LOCATION_TYPES = [
   { value: "commercial", label: "Commercial Gym" },
   { value: "crossfit", label: "CrossFit Box" },
@@ -299,39 +660,213 @@ function ItemCard({ children, onEdit, onDelete, itemName, itemType = "item", cla
 
 // ==================== MODALS ====================
 function SkillModal({ open, onOpenChange, skill, onSave, onDelete }: { open: boolean; onOpenChange: (open: boolean) => void; skill?: SkillData | null; onSave: (data: Partial<SkillData>) => Promise<void>; onDelete?: (id: string) => Promise<void> }) {
-  const [name, setName] = useState(skill?.name || "");
-  const [category, setCategory] = useState(skill?.category || "Other");
+  const [step, setStep] = useState<"select" | "status">(skill ? "status" : "select");
+  const [selectedSkill, setSelectedSkill] = useState<{ name: string; category: string } | null>(
+    skill ? { name: skill.name, category: skill.category } : null
+  );
   const [status, setStatus] = useState(skill?.currentStatus || "not_started");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [saving, setSaving] = useState(false);
 
+  // Get unique categories and difficulties
+  const categories = useMemo(() => ["all", ...new Set(SKILLS_DATABASE.map(s => s.category))], []);
+  const difficulties = ["all", "Beginner", "Intermediate", "Advanced", "Elite"];
+
+  // Filter skills
+  const filteredSkills = useMemo(() => {
+    return SKILLS_DATABASE.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = categoryFilter === "all" || s.category === categoryFilter;
+      const matchesDifficulty = difficultyFilter === "all" || s.difficulty === difficultyFilter;
+      return matchesSearch && matchesCategory && matchesDifficulty;
+    });
+  }, [search, categoryFilter, difficultyFilter]);
+
+  // Group by category for better display
+  const groupedSkills = useMemo(() => {
+    const groups: Record<string, typeof SKILLS_DATABASE> = {};
+    filteredSkills.forEach(s => {
+      if (!groups[s.category]) groups[s.category] = [];
+      groups[s.category].push(s);
+    });
+    return groups;
+  }, [filteredSkills]);
+
   useEffect(() => {
-    if (open) { setName(skill?.name || ""); setCategory(skill?.category || "Other"); setStatus(skill?.currentStatus || "not_started"); }
+    if (open) {
+      if (skill) {
+        setSelectedSkill({ name: skill.name, category: skill.category });
+        setStatus(skill.currentStatus);
+        setStep("status");
+      } else {
+        setSelectedSkill(null);
+        setStatus("not_started");
+        setStep("select");
+      }
+      setSearch("");
+      setCategoryFilter("all");
+      setDifficultyFilter("all");
+    }
   }, [open, skill]);
 
+  const handleSelectSkill = (s: { name: string; category: string }) => {
+    setSelectedSkill(s);
+    setStep("status");
+  };
+
   const handleSave = async () => {
-    if (!name.trim()) { toast.error("Please enter a skill name"); return; }
+    if (!selectedSkill) { toast.error("Please select a skill"); return; }
     setSaving(true);
-    try { await onSave({ id: skill?.id, name, category, currentStatus: status }); onOpenChange(false); toast.success(skill ? "Skill updated!" : "Skill added!"); }
-    catch { toast.error("Failed to save skill"); }
+    try {
+      await onSave({ id: skill?.id, name: selectedSkill.name, category: selectedSkill.category, currentStatus: status });
+      onOpenChange(false);
+      toast.success(skill ? "Skill updated!" : "Skill added!");
+    } catch { toast.error("Failed to save skill"); }
     finally { setSaving(false); }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{skill ? "Edit Skill" : "Add Skill"}</DialogTitle>
-          <DialogDescription>Track your fitness skills and progress</DialogDescription>
+          <DialogDescription>
+            {step === "select" ? "Search and select a skill to track" : "Set your progress status"}
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2"><Label>Skill Name</Label><Input placeholder="e.g., Muscle Up, Handstand" value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Category</Label><Select value={category} onValueChange={setCategory}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SKILL_CATEGORIES.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select></div>
-          <div className="space-y-2"><Label>Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SKILL_STATUSES.map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent></Select></div>
-        </div>
+
+        {step === "select" ? (
+          <div className="flex-1 overflow-hidden flex flex-col gap-3">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search skills..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Filters */}
+            <div className="flex gap-2">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="flex-1 h-8 text-xs">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(c => (
+                    <SelectItem key={c} value={c}>{c === "all" ? "All Categories" : c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                <SelectTrigger className="flex-1 h-8 text-xs">
+                  <SelectValue placeholder="Difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                  {difficulties.map(d => (
+                    <SelectItem key={d} value={d}>{d === "all" ? "All Levels" : d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Skills List */}
+            <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-4 min-h-[250px] max-h-[350px]">
+              {Object.keys(groupedSkills).length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No skills found</p>
+              ) : (
+                Object.entries(groupedSkills).map(([category, skills]) => (
+                  <div key={category}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{category}</p>
+                    <div className="space-y-1">
+                      {skills.map(s => (
+                        <button
+                          key={s.name}
+                          onClick={() => handleSelectSkill(s)}
+                          className={cn(
+                            "w-full px-3 py-2 rounded-lg text-left transition-all",
+                            "flex items-center justify-between",
+                            "hover:bg-brand/10 border border-transparent hover:border-brand/20",
+                            selectedSkill?.name === s.name && "bg-brand/10 border-brand/30"
+                          )}
+                        >
+                          <span className="font-medium text-sm">{s.name}</span>
+                          <Badge variant="outline" className={cn(
+                            "text-xs",
+                            s.difficulty === "Beginner" && "border-green-500/50 text-green-600",
+                            s.difficulty === "Intermediate" && "border-yellow-500/50 text-yellow-600",
+                            s.difficulty === "Advanced" && "border-orange-500/50 text-orange-600",
+                            s.difficulty === "Elite" && "border-red-500/50 text-red-600"
+                          )}>
+                            {s.difficulty}
+                          </Badge>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              {filteredSkills.length} skills available
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 py-4">
+            {/* Selected Skill Display */}
+            <div className="p-4 rounded-xl bg-brand/10 border border-brand/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-lg">{selectedSkill?.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSkill?.category}</p>
+                </div>
+                {!skill && (
+                  <Button variant="ghost" size="sm" onClick={() => setStep("select")}>
+                    Change
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Status Selection */}
+            <div className="space-y-2">
+              <Label>Your Progress</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SKILL_STATUSES.map(s => (
+                  <button
+                    key={s.value}
+                    onClick={() => setStatus(s.value)}
+                    className={cn(
+                      "p-3 rounded-lg border-2 transition-all text-left",
+                      "hover:border-brand/50",
+                      status === s.value ? "border-brand bg-brand/10" : "border-border"
+                    )}
+                  >
+                    <span className="font-medium text-sm">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          {skill && onDelete && <Button variant="destructive" onClick={() => { onDelete(skill.id); onOpenChange(false); }} className="sm:mr-auto"><Trash2 className="h-4 w-4 mr-2" />Delete</Button>}
+          {skill && onDelete && (
+            <Button variant="destructive" onClick={() => { onDelete(skill.id); onOpenChange(false); }} className="sm:mr-auto">
+              <Trash2 className="h-4 w-4 mr-2" />Delete
+            </Button>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          {step === "status" && (
+            <Button onClick={handleSave} disabled={saving || !selectedSkill}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -339,36 +874,223 @@ function SkillModal({ open, onOpenChange, skill, onSave, onDelete }: { open: boo
 }
 
 function PRModal({ open, onOpenChange, pr, onSave, onDelete }: { open: boolean; onOpenChange: (open: boolean) => void; pr?: PRData | null; onSave: (data: Partial<PRData>) => Promise<void>; onDelete?: (id: string) => Promise<void> }) {
-  const [exerciseName, setExerciseName] = useState(pr?.exerciseName || "");
+  const [step, setStep] = useState<"select" | "value">(pr ? "value" : "select");
+  const [selectedExercise, setSelectedExercise] = useState<{ name: string; category: string; unit: string } | null>(
+    pr ? { name: pr.exerciseName, category: "", unit: pr.unit } : null
+  );
   const [value, setValue] = useState(pr?.value?.toString() || "");
   const [unit, setUnit] = useState(pr?.unit || "lbs");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { if (open) { setExerciseName(pr?.exerciseName || ""); setValue(pr?.value?.toString() || ""); setUnit(pr?.unit || "lbs"); } }, [open, pr]);
+  // Get unique categories
+  const categories = useMemo(() => ["all", ...new Set(EXERCISES_DATABASE.map(e => e.category))], []);
+
+  // Filter exercises
+  const filteredExercises = useMemo(() => {
+    return EXERCISES_DATABASE.filter(e => {
+      const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = categoryFilter === "all" || e.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [search, categoryFilter]);
+
+  // Group by category
+  const groupedExercises = useMemo(() => {
+    const groups: Record<string, typeof EXERCISES_DATABASE> = {};
+    filteredExercises.forEach(e => {
+      if (!groups[e.category]) groups[e.category] = [];
+      groups[e.category].push(e);
+    });
+    return groups;
+  }, [filteredExercises]);
+
+  useEffect(() => {
+    if (open) {
+      if (pr) {
+        const exercise = EXERCISES_DATABASE.find(e => e.name === pr.exerciseName);
+        setSelectedExercise(exercise || { name: pr.exerciseName, category: "", unit: pr.unit });
+        setValue(pr.value?.toString() || "");
+        setUnit(pr.unit);
+        setStep("value");
+      } else {
+        setSelectedExercise(null);
+        setValue("");
+        setUnit("lbs");
+        setStep("select");
+      }
+      setSearch("");
+      setCategoryFilter("all");
+    }
+  }, [open, pr]);
+
+  const handleSelectExercise = (e: { name: string; category: string; unit: string }) => {
+    setSelectedExercise(e);
+    setUnit(e.unit);
+    setStep("value");
+  };
 
   const handleSave = async () => {
-    if (!exerciseName.trim() || !value) { toast.error("Please fill in all fields"); return; }
+    if (!selectedExercise || !value) { toast.error("Please fill in all fields"); return; }
     setSaving(true);
-    try { await onSave({ id: pr?.id, exerciseName, value: parseFloat(value), unit }); onOpenChange(false); toast.success(pr ? "PR updated!" : "PR added!"); }
-    catch { toast.error("Failed to save PR"); }
+    try {
+      await onSave({ id: pr?.id, exerciseName: selectedExercise.name, value: parseFloat(value), unit });
+      onOpenChange(false);
+      toast.success(pr ? "PR updated!" : "PR added!");
+    } catch { toast.error("Failed to save PR"); }
     finally { setSaving(false); }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>{pr ? "Edit Personal Record" : "Add Personal Record"}</DialogTitle><DialogDescription>Track your best lifts</DialogDescription></DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2"><Label>Exercise</Label><Input placeholder="e.g., Bench Press, Deadlift" value={exerciseName} onChange={(e) => setExerciseName(e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Value</Label><Input type="number" placeholder="225" value={value} onChange={(e) => setValue(e.target.value)} /></div>
-            <div className="space-y-2"><Label>Unit</Label><Select value={unit} onValueChange={setUnit}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PR_UNITS.map((u) => (<SelectItem key={u} value={u}>{u}</SelectItem>))}</SelectContent></Select></div>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>{pr ? "Edit Personal Record" : "Add Personal Record"}</DialogTitle>
+          <DialogDescription>
+            {step === "select" ? "Search and select an exercise" : "Enter your personal record"}
+          </DialogDescription>
+        </DialogHeader>
+
+        {step === "select" ? (
+          <div className="flex-1 overflow-hidden flex flex-col gap-3">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search exercises..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Category Filter */}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(c => (
+                  <SelectItem key={c} value={c}>{c === "all" ? "All Categories" : c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Exercises List */}
+            <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-4 min-h-[250px] max-h-[350px]">
+              {Object.keys(groupedExercises).length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No exercises found</p>
+              ) : (
+                Object.entries(groupedExercises).map(([category, exercises]) => (
+                  <div key={category}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{category}</p>
+                    <div className="space-y-1">
+                      {exercises.map(e => (
+                        <button
+                          key={e.name}
+                          onClick={() => handleSelectExercise(e)}
+                          className={cn(
+                            "w-full px-3 py-2 rounded-lg text-left transition-all",
+                            "flex items-center justify-between",
+                            "hover:bg-brand/10 border border-transparent hover:border-brand/20",
+                            selectedExercise?.name === e.name && "bg-brand/10 border-brand/30"
+                          )}
+                        >
+                          <span className="font-medium text-sm">{e.name}</span>
+                          <span className="text-xs text-muted-foreground">{e.unit}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              {filteredExercises.length} exercises available
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4 py-4">
+            {/* Selected Exercise Display */}
+            <div className="p-4 rounded-xl bg-brand/10 border border-brand/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-lg">{selectedExercise?.name}</p>
+                  {selectedExercise?.category && (
+                    <p className="text-sm text-muted-foreground">{selectedExercise.category}</p>
+                  )}
+                </div>
+                {!pr && (
+                  <Button variant="ghost" size="sm" onClick={() => setStep("select")}>
+                    Change
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Value Input */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Value</Label>
+                <Input
+                  type="number"
+                  placeholder="225"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  className="text-lg font-bold h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Unit</Label>
+                <Select value={unit} onValueChange={setUnit}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PR_UNITS.map(u => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Quick Value Buttons for weight-based PRs */}
+            {(unit === "lbs" || unit === "kg") && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Quick Select</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[135, 185, 225, 275, 315, 365, 405, 495].map(w => (
+                    <Button
+                      key={w}
+                      variant={value === w.toString() ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setValue(w.toString())}
+                      className="text-xs"
+                    >
+                      {w}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          {pr && onDelete && <Button variant="destructive" onClick={() => { onDelete(pr.id); onOpenChange(false); }} className="sm:mr-auto"><Trash2 className="h-4 w-4 mr-2" />Delete</Button>}
+          {pr && onDelete && (
+            <Button variant="destructive" onClick={() => { onDelete(pr.id); onOpenChange(false); }} className="sm:mr-auto">
+              <Trash2 className="h-4 w-4 mr-2" />Delete
+            </Button>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          {step === "value" && (
+            <Button onClick={handleSave} disabled={saving || !selectedExercise || !value}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -531,42 +1253,481 @@ function SportModal({ open, onOpenChange, sport, onSave, onDelete }: { open: boo
 function HandleModal({ open, onOpenChange, currentHandle, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; currentHandle?: string; onSave: (handle: string) => Promise<void> }) {
   const [handle, setHandle] = useState(currentHandle || "");
   const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
+  const [errorType, setErrorType] = useState<string | null>(null);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => { if (open) { setHandle(currentHandle || ""); setError(""); } }, [open, currentHandle]);
+  useEffect(() => { 
+    if (open) { 
+      setHandle(currentHandle || ""); 
+      setError(""); 
+      setErrorType(null);
+      setIsAvailable(currentHandle ? true : null);
+      setSuggestions([]);
+    } 
+  }, [open, currentHandle]);
+
+  const checkAvailability = async (handleToCheck: string) => {
+    if (handleToCheck.length < 3) {
+      setIsAvailable(null);
+      return;
+    }
+
+    setChecking(true);
+    try {
+      const res = await fetch(`/api/user/handle?check=${encodeURIComponent(handleToCheck)}`);
+      const data = await res.json();
+      
+      if (data.available) {
+        setIsAvailable(true);
+        setError("");
+        setErrorType(null);
+        setSuggestions([]);
+      } else {
+        setIsAvailable(false);
+        setError(data.error || "This handle is not available");
+        setErrorType(data.errorType || null);
+        setSuggestions(data.suggestions || []);
+      }
+    } catch {
+      // Don't show error for network issues during typing
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleChange = (value: string) => {
     const cleaned = value.toLowerCase().replace(/[^a-z0-9_]/g, "");
     setHandle(cleaned);
     setError("");
+    setErrorType(null);
+    setIsAvailable(null);
+    setSuggestions([]);
+
+    // Clear existing timeout
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current);
+    }
+
+    // Debounce the availability check
+    if (cleaned.length >= 3) {
+      checkTimeoutRef.current = setTimeout(() => {
+        checkAvailability(cleaned);
+      }, 400);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setHandle(suggestion);
+    checkAvailability(suggestion);
   };
 
   const handleSave = async () => {
     if (!handle.trim()) { setError("Handle is required"); return; }
     if (handle.length < 3) { setError("Handle must be at least 3 characters"); return; }
     if (handle.length > 20) { setError("Handle must be 20 characters or less"); return; }
+    if (!handle.match(/^[a-z][a-z0-9_]*$/)) { setError("Handle must start with a letter"); return; }
+    if (isAvailable === false) { return; }
+    
     setSaving(true);
-    try { await onSave(handle); onOpenChange(false); toast.success("Handle saved!"); }
-    catch { setError("Handle may already be taken"); }
+    try { 
+      await onSave(handle); 
+      onOpenChange(false); 
+      toast.success("Handle saved!"); 
+    }
+    catch (err: any) { 
+      setError(err?.message || "Handle may already be taken"); 
+    }
     finally { setSaving(false); }
   };
+
+  const canSave = handle.length >= 3 && isAvailable !== false && !checking;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Set Your Handle</DialogTitle><DialogDescription>Your unique username for invites and sharing</DialogDescription></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Set Your Handle</DialogTitle>
+          <DialogDescription>Your unique username for invites and profile sharing</DialogDescription>
+        </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Handle</Label>
             <div className="relative">
               <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={handle} onChange={(e) => handleChange(e.target.value)} placeholder="yourhandle" className="pl-9" maxLength={20} />
+              <Input 
+                value={handle} 
+                onChange={(e) => handleChange(e.target.value)} 
+                placeholder="yourhandle" 
+                className={cn(
+                  "pl-9 pr-10",
+                  isAvailable === true && "border-success focus-visible:ring-success",
+                  isAvailable === false && "border-destructive focus-visible:ring-destructive"
+                )} 
+                maxLength={20} 
+              />
+              {/* Status indicator */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {checking && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                {!checking && isAvailable === true && <Check className="h-4 w-4 text-success" />}
+                {!checking && isAvailable === false && <X className="h-4 w-4 text-destructive" />}
+              </div>
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <p className="text-xs text-muted-foreground">Letters, numbers, and underscores only. 3-20 characters.</p>
+            
+            {/* Error message */}
+            {error && (
+              <p className={cn(
+                "text-sm",
+                errorType === "profanity" ? "text-destructive font-medium" : "text-destructive"
+              )}>
+                {error}
+              </p>
+            )}
+            
+            {/* Suggestions when taken */}
+            {suggestions.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Try one of these instead:</p>
+                <div className="flex flex-wrap gap-1">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleSuggestionClick(s)}
+                      className="px-2 py-1 text-xs bg-muted hover:bg-muted/80 rounded-md transition-colors"
+                    >
+                      @{s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Success message */}
+            {isAvailable === true && !currentHandle && (
+              <p className="text-sm text-success">This handle is available!</p>
+            )}
+            
+            {/* Help text */}
+            <p className="text-xs text-muted-foreground">
+              Must start with a letter. Letters, numbers, and underscores only. 3-20 characters.
+            </p>
           </div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button></DialogFooter>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={saving || !canSave}>
+            {saving ? "Saving..." : "Save Handle"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Display Name Modal
+function DisplayNameModal({ 
+  open, 
+  onOpenChange, 
+  currentName, 
+  onSave 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  currentName: string; 
+  onSave: (name: string) => Promise<void>;
+}) {
+  const [name, setName] = useState(currentName);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { 
+    if (open) { 
+      setName(currentName); 
+    } 
+  }, [open, currentName]);
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await onSave(name.trim());
+      onOpenChange(false);
+      toast.success("Name updated!");
+    } catch {
+      toast.error("Failed to update name");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Display Name</DialogTitle>
+          <DialogDescription>This is how others will see your name</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Display Name</Label>
+            <Input 
+              value={name} 
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              maxLength={50}
+            />
+            <p className="text-xs text-muted-foreground">
+              {name.length}/50 characters
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={saving || !name.trim()}>
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Visibility Badge Component for per-field privacy control
+function VisibilityBadge({ 
+  visibility, 
+  onChange 
+}: { 
+  visibility: "public" | "circles" | "private"; 
+  onChange: (v: "public" | "circles" | "private") => void;
+}) {
+  const options = [
+    { value: "public" as const, label: "🌐 Public", description: "Anyone can see" },
+    { value: "circles" as const, label: "👥 Circles", description: "Circle members only" },
+    { value: "private" as const, label: "🔒 Private", description: "Only you" },
+  ];
+
+  const current = options.find(o => o.value === visibility) || options[0];
+
+  return (
+    <Select value={visibility} onValueChange={(v: "public" | "circles" | "private") => onChange(v)}>
+      <SelectTrigger className="w-auto h-7 text-xs px-2 gap-1">
+        <SelectValue>{current.label}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            <div className="flex flex-col">
+              <span>{opt.label}</span>
+              <span className="text-xs text-muted-foreground">{opt.description}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+// Bio Modal with moderation
+function BioModal({ 
+  open, 
+  onOpenChange, 
+  currentBio, 
+  onSave 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  currentBio?: string; 
+  onSave: (bio: string) => Promise<void>;
+}) {
+  const [bio, setBio] = useState(currentBio || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const maxLength = 160;
+
+  useEffect(() => { 
+    if (open) { 
+      setBio(currentBio || ""); 
+      setError(""); 
+    } 
+  }, [open, currentBio]);
+
+  const handleSave = async () => {
+    if (bio.length > maxLength) {
+      setError(`Bio must be ${maxLength} characters or less`);
+      return;
+    }
+    
+    setSaving(true);
+    setError("");
+    
+    try {
+      // Check for moderation via API
+      const moderationRes = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bio }),
+      });
+      
+      if (!moderationRes.ok) {
+        const data = await moderationRes.json();
+        if (data.error?.includes("inappropriate") || data.error?.includes("profanity")) {
+          setError("Your bio contains inappropriate content. Please revise.");
+          return;
+        }
+        throw new Error(data.error || "Failed to save bio");
+      }
+      
+      onOpenChange(false);
+      toast.success("Bio saved!");
+      // Refresh handled by parent
+      window.location.reload();
+    } catch (err: any) {
+      setError(err.message || "Failed to save bio");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Bio</DialogTitle>
+          <DialogDescription>Tell others about yourself</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Bio</Label>
+              <span className={cn(
+                "text-xs",
+                bio.length > maxLength ? "text-destructive" : "text-muted-foreground"
+              )}>
+                {bio.length}/{maxLength}
+              </span>
+            </div>
+            <Textarea 
+              value={bio} 
+              onChange={(e) => {
+                setBio(e.target.value);
+                setError("");
+              }}
+              placeholder="Fitness enthusiast, gym rat, weekend warrior..."
+              className="resize-none"
+              rows={3}
+              maxLength={maxLength + 10}
+            />
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <p className="text-xs text-muted-foreground">
+              Keep it clean! Bios are checked for inappropriate content.
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={saving || bio.length > maxLength}>
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Location Edit Modal
+function LocationEditModal({ 
+  open, 
+  onOpenChange, 
+  currentCity, 
+  currentCountry,
+  onSave 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  currentCity?: string;
+  currentCountry?: string;
+  onSave: (city: string, country: string) => Promise<void>;
+}) {
+  const [city, setCity] = useState(currentCity || "");
+  const [country, setCountry] = useState(currentCountry || "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { 
+    if (open) { 
+      setCity(currentCity || ""); 
+      setCountry(currentCountry || "");
+    } 
+  }, [open, currentCity, currentCountry]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(city, country);
+      onOpenChange(false);
+      toast.success("Location saved!");
+    } catch {
+      toast.error("Failed to save location");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClear = async () => {
+    setSaving(true);
+    try {
+      await onSave("", "");
+      onOpenChange(false);
+      toast.success("Location removed");
+    } catch {
+      toast.error("Failed to remove location");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Location</DialogTitle>
+          <DialogDescription>Share your city with your profile visitors</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>City</Label>
+            <Input 
+              value={city} 
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="New York, Los Angeles, London..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Country (optional)</Label>
+            <Input 
+              value={country} 
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="USA, UK, Canada..."
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Only your city is shown publicly, not your exact address.
+          </p>
+        </div>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          {(currentCity || currentCountry) && (
+            <Button variant="ghost" onClick={handleClear} disabled={saving} className="text-destructive hover:text-destructive">
+              Remove Location
+            </Button>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -782,7 +1943,10 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
   const [metricsModal, setMetricsModal] = useState(false);
   const [sportModal, setSportModal] = useState<{ open: boolean; sport?: SportData | null }>({ open: false });
   const [handleModal, setHandleModal] = useState(false);
+  const [displayNameModal, setDisplayNameModal] = useState(false);
   const [socialLinksModal, setSocialLinksModal] = useState(false);
+  const [bioModal, setBioModal] = useState(false);
+  const [locationEditModal, setLocationEditModal] = useState(false);
   const [changeEmailModal, setChangeEmailModal] = useState(false);
   const [passwordResetModal, setPasswordResetModal] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -829,11 +1993,80 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
   const handleSaveMetrics = async (data: MetricsData) => { const response = await fetch("/api/user/metrics", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); if (!response.ok) throw new Error(); router.refresh(); };
   const handleSaveSport = async (data: Partial<SportData>) => { const response = await fetch(data.id ? `/api/user/sports/${data.id}` : "/api/user/sports", { method: data.id ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); if (!response.ok) throw new Error(); router.refresh(); };
   const handleDeleteSport = async (id: string) => { await fetch(`/api/user/sports/${id}`, { method: "DELETE" }); router.refresh(); };
-  const handleSaveHandle = async (handle: string) => { const response = await fetch("/api/user/profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle }) }); if (!response.ok) throw new Error(); router.refresh(); };
+  const handleSaveHandle = async (handle: string) => { 
+    const response = await fetch("/api/user/handle", { 
+      method: "POST", 
+      headers: { "Content-Type": "application/json" }, 
+      body: JSON.stringify({ handle }) 
+    }); 
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || "Failed to save handle");
+    }
+    router.refresh(); 
+  };
   const handleSaveSocialLinks = async (links: { instagram?: string; tiktok?: string; youtube?: string; twitter?: string; linkedin?: string }) => { const response = await fetch("/api/user/profile", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ socialLinks: links }) }); if (!response.ok) throw new Error(); router.refresh(); };
+  
+  const handleSaveDisplayName = async (name: string) => {
+    const response = await fetch("/api/user/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName: name }),
+    });
+    if (!response.ok) throw new Error();
+    router.refresh();
+  };
+  
+  const handleSaveBio = async (bio: string) => {
+    const response = await fetch("/api/user/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bio }),
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || "Failed to save bio");
+    }
+    router.refresh();
+  };
+
+  const handleSaveCityLocation = async (city: string, country: string) => {
+    const response = await fetch("/api/user/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city, country }),
+    });
+    if (!response.ok) throw new Error();
+    router.refresh();
+  };
+
+  const updateFieldVisibility = async (field: string, visibility: "public" | "circles" | "private") => {
+    try {
+      const currentFieldVisibility = profile?.fieldVisibility || {};
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          fieldVisibility: { ...currentFieldVisibility, [field]: visibility } 
+        }),
+      });
+      if (response.ok) {
+        router.refresh();
+        toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} visibility updated`);
+      }
+    } catch {
+      toast.error("Failed to update visibility");
+    }
+  };
 
   const copyProfileLink = () => {
-    const url = profile?.handle ? `${window.location.origin}/@${profile.handle}` : `${window.location.origin}/u/${user.id}`;
+    if (!profile?.handle) {
+      // Prompt user to create a handle first
+      setHandleModal(true);
+      toast.info("Create a handle first to share your profile!");
+      return;
+    }
+    const url = `${window.location.origin}/@${profile.handle}`;
     navigator.clipboard.writeText(url);
     toast.success("Profile link copied! Add it to your Linktree or bio.");
   };
@@ -867,9 +2100,15 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
               <AvatarFallback className="text-xl bg-brand/20 text-brand">{displayName.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold truncate">{displayName}</h2>
+              <button 
+                onClick={() => setDisplayNameModal(true)} 
+                className="text-xl font-bold truncate hover:text-brand transition-colors flex items-center gap-1 group"
+              >
+                {displayName}
+                <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+              </button>
               {profile?.handle ? (
-                <p className="text-brand text-sm">@{profile.handle}</p>
+                <button onClick={() => setHandleModal(true)} className="text-brand text-sm hover:underline">@{profile.handle}</button>
               ) : (
                 <button onClick={() => setHandleModal(true)} className="text-sm text-muted-foreground hover:text-brand flex items-center gap-1">
                   <AtSign className="h-3 w-3" />Set your handle
@@ -879,7 +2118,19 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
                 <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="h-3 w-3" />{profile.city}</p>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={() => setHandleModal(true)}><Edit className="h-4 w-4" /></Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm"><Edit className="h-4 w-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setDisplayNameModal(true)}>
+                  <User className="h-4 w-4 mr-2" />Edit Name
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setHandleModal(true)}>
+                  <AtSign className="h-4 w-4 mr-2" />Edit Handle
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Share Link CTA */}
@@ -892,6 +2143,102 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
               <Button variant="ghost" size="sm" onClick={copyProfileLink}><Copy className="h-4 w-4 mr-1" />Copy Link</Button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">Add this link to your Instagram, TikTok, or Linktree bio</p>
+          </div>
+
+          {/* Profile Visibility */}
+          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Profile Visibility</span>
+              </div>
+              <Switch 
+                checked={profile?.visibility === "public"}
+                onCheckedChange={async (checked) => {
+                  try {
+                    const res = await fetch("/api/user/profile", {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ visibility: checked ? "public" : "private" }),
+                    });
+                    if (res.ok) {
+                      router.refresh();
+                      toast.success(checked ? "Profile is now public" : "Profile is now private");
+                    }
+                  } catch {
+                    toast.error("Failed to update privacy settings");
+                  }
+                }}
+              />
+            </div>
+            <div className={cn(
+              "text-xs p-2 rounded-md",
+              profile?.visibility === "public" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+            )}>
+              {profile?.visibility === "public" ? (
+                <div>
+                  <p className="font-medium">🌐 Public Profile</p>
+                  <p className="mt-0.5">Anyone with your link can view your handle, age, bio, sports, PRs, and achievements.</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium">🔒 Private Profile</p>
+                  <p className="mt-0.5">Only members of your circles can see your full profile. Others see just your name and photo.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bio Section */}
+          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Bio</span>
+              </div>
+              <VisibilityBadge 
+                visibility={profile?.fieldVisibility?.bio || "public"} 
+                onChange={(v) => updateFieldVisibility("bio", v)}
+              />
+            </div>
+            {profile?.bio ? (
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-muted-foreground flex-1">{profile.bio}</p>
+                <Button variant="ghost" size="sm" className="shrink-0" onClick={() => setBioModal(true)}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => setBioModal(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Add a bio (160 chars max)
+              </Button>
+            )}
+          </div>
+
+          {/* Location Section */}
+          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Location</span>
+              </div>
+              <VisibilityBadge 
+                visibility={profile?.fieldVisibility?.city || "public"} 
+                onChange={(v) => updateFieldVisibility("city", v)}
+              />
+            </div>
+            {profile?.city ? (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">{profile.city}{profile.country ? `, ${profile.country}` : ""}</p>
+                <Button variant="ghost" size="sm" onClick={() => setLocationEditModal(true)}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => setLocationEditModal(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Add your city
+              </Button>
+            )}
           </div>
 
           {/* Social Links */}
@@ -1049,6 +2396,14 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
           </AccordionTrigger>
           <AccordionContent className="pb-4">
             <div className="space-y-4 pt-2">
+              {/* Visibility Control */}
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                <span className="text-xs text-muted-foreground">Who can see your skills & PRs?</span>
+                <VisibilityBadge 
+                  visibility={profile?.fieldVisibility?.skills || "public"} 
+                  onChange={(v) => updateFieldVisibility("skills", v)}
+                />
+              </div>
               <div className="flex items-center justify-between"><span className="text-sm font-medium">Skills</span><Button variant="ghost" size="sm" onClick={() => setSkillModal({ open: true })}><Plus className="h-3.5 w-3.5 mr-1" />Add</Button></div>
               {skills.length === 0 ? <p className="text-sm text-muted-foreground">No skills added</p> : (
                 <div className="space-y-2">{skills.map((s) => (<ItemCard key={s.id} onEdit={() => setSkillModal({ open: true, skill: s })} onDelete={() => handleDeleteSkill(s.id)} itemName={s.name} itemType="skill"><div className="flex items-center gap-2"><span className="text-sm font-medium">{s.name}</span><Badge variant="secondary" className="text-xs">{s.category}</Badge><Badge className={cn("text-xs ml-auto", s.currentStatus === "mastered" && "bg-energy text-white", s.currentStatus === "achieved" && "bg-success text-white")}>{SKILL_STATUSES.find((st) => st.value === s.currentStatus)?.label || s.currentStatus}</Badge></div></ItemCard>))}</div>
@@ -1072,6 +2427,14 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
           </AccordionTrigger>
           <AccordionContent className="pb-4">
             <div className="space-y-4 pt-2">
+              {/* Visibility Control */}
+              <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                <span className="text-xs text-muted-foreground">Who can see your sports?</span>
+                <VisibilityBadge 
+                  visibility={profile?.fieldVisibility?.sports || "public"} 
+                  onChange={(v) => updateFieldVisibility("sports", v)}
+                />
+              </div>
               <div className="flex items-center justify-between"><span className="text-sm font-medium">Your Sports</span><Button variant="ghost" size="sm" onClick={() => setSportModal({ open: true })}><Plus className="h-3.5 w-3.5 mr-1" />Add</Button></div>
               {sports.length === 0 ? <p className="text-sm text-muted-foreground">No sports added</p> : (
                 <div className="space-y-2">{sports.map((s) => (<ItemCard key={s.id} onEdit={() => setSportModal({ open: true, sport: s })} onDelete={() => handleDeleteSport(s.id)} itemName={s.sport} itemType="sport"><div className="flex items-center gap-2"><span className="text-sm font-medium">{s.sport}</span>{s.level && <Badge variant="secondary" className="text-xs capitalize">{s.level.replace("_", " ")}</Badge>}{s.yearsPlaying && <span className="text-xs text-muted-foreground">{s.yearsPlaying} yrs</span>}{s.currentlyActive && <Badge className="text-xs ml-auto bg-success/20 text-success">Active</Badge>}</div></ItemCard>))}</div>
@@ -1202,6 +2565,9 @@ export function ProfilePage({ user, profile, metrics, limitations, skills, locat
       <MetricsModal open={metricsModal} onOpenChange={setMetricsModal} metrics={metrics} onSave={handleSaveMetrics} />
       <SportModal open={sportModal.open} onOpenChange={(open) => setSportModal({ open, sport: open ? sportModal.sport : null })} sport={sportModal.sport} onSave={handleSaveSport} onDelete={handleDeleteSport} />
       <HandleModal open={handleModal} onOpenChange={setHandleModal} currentHandle={profile?.handle} onSave={handleSaveHandle} />
+      <DisplayNameModal open={displayNameModal} onOpenChange={setDisplayNameModal} currentName={displayName} onSave={handleSaveDisplayName} />
+      <BioModal open={bioModal} onOpenChange={setBioModal} currentBio={profile?.bio} onSave={handleSaveBio} />
+      <LocationEditModal open={locationEditModal} onOpenChange={setLocationEditModal} currentCity={profile?.city} currentCountry={profile?.country} onSave={handleSaveCityLocation} />
       <SocialLinksModal open={socialLinksModal} onOpenChange={setSocialLinksModal} socialLinks={profile?.socialLinks || {}} onSave={handleSaveSocialLinks} />
       <ChangeEmailModal open={changeEmailModal} onOpenChange={setChangeEmailModal} currentEmail={user.email} />
       <PasswordResetModal open={passwordResetModal} onOpenChange={setPasswordResetModal} email={user.email} />

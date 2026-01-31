@@ -271,6 +271,9 @@ export function CompleteSection({
               {data.bodyFatPercentage && (
                 <ReviewItem label="Body Fat" value={`${data.bodyFatPercentage}%`} />
               )}
+              {data.city && (
+                <ReviewItem label="City" value={data.city} />
+              )}
             </div>
           </ReviewSection>
 

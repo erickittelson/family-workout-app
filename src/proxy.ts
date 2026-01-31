@@ -5,12 +5,23 @@ import type { NextRequest } from "next/server";
  * Proxy for the Family Workout App (Next.js 16+)
  *
  * Handles:
+ * - URL rewrites (e.g., /@handle -> /u/handle)
  * - API caching headers
  * - Security headers
  */
 export function proxy(request: NextRequest) {
-  const response = NextResponse.next();
   const { pathname } = request.nextUrl;
+
+  // Handle @handle URLs - rewrite to /u/handle
+  // Match paths like /@username (but not /@ alone)
+  if (pathname.match(/^\/@[a-zA-Z][a-zA-Z0-9_]*$/)) {
+    const handle = pathname.slice(2); // Remove "/@" prefix
+    const url = request.nextUrl.clone();
+    url.pathname = `/u/${handle}`;
+    return NextResponse.rewrite(url);
+  }
+
+  const response = NextResponse.next();
 
   // Add security headers to all responses
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -60,10 +71,11 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-// Only run proxy on API routes and specific paths
+// Only run proxy on API routes, @handle routes, and specific paths
 export const config = {
   matcher: [
     "/api/:path*",
+    "/@:path*",
     "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };

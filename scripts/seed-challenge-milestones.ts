@@ -1,23 +1,42 @@
 /**
- * Seed Challenge Milestones
+ * Seed Challenges and Milestones
  * 
- * Adds milestones to existing challenges with:
- * - Structured progression
- * - Fun difficulty labels
- * - Linked workouts where applicable
+ * Creates challenges with:
+ * - Complete metadata and rules
+ * - Structured milestones for progression
+ * - Fun difficulty labels and branding
  * 
  * Run with: npx tsx scripts/seed-challenge-milestones.ts
  */
 
-// Fun difficulty branding
-const DIFFICULTY_BRANDS = {
-  beginner: { label: "Getting Started 🌱", theme: "playful" },
-  intermediate: { label: "Leveling Up 💪", theme: "fire" },
-  advanced: { label: "Beast Mode 🔥", theme: "fire" },
-  extreme: { label: "Insane ☠️", theme: "military" },
-};
+import { config } from "dotenv";
+config({ path: ".env.local" });
 
-// Milestone definitions for each challenge
+import { db } from "../src/lib/db";
+import { challenges, challengeMilestones } from "../src/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+// Challenge definition
+interface ChallengeDefinition {
+  name: string;
+  description: string;
+  shortDescription: string;
+  category: "strength" | "cardio" | "wellness" | "hybrid" | "transformation";
+  difficulty: "beginner" | "intermediate" | "advanced" | "extreme";
+  durationDays: number;
+  rules: string[];
+  dailyTasks: {
+    name: string;
+    description?: string;
+    type: "workout" | "nutrition" | "mindset" | "recovery" | "custom";
+    isRequired: boolean;
+  }[];
+  progressionType: "linear" | "pyramid" | "random" | "custom";
+  restartOnFail: boolean;
+  unlockMessage: string;
+  milestones: MilestoneDefinition[];
+}
+
 interface MilestoneDefinition {
   order: number;
   name: string;
@@ -30,11 +49,28 @@ interface MilestoneDefinition {
   unlockMessage: string;
 }
 
-const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTheme: string; milestones: MilestoneDefinition[] }> = {
-  // Couch to 5K
-  "Couch to 5K": {
-    difficultyLabel: "Getting Started 🌱",
-    brandingTheme: "playful",
+const CHALLENGES: ChallengeDefinition[] = [
+  // 1. Couch to 5K
+  {
+    name: "Couch to 5K",
+    description: "The proven 9-week program that takes complete beginners from zero running to completing a 5K. Gradual progression ensures sustainable improvement and prevents injury.",
+    shortDescription: "Go from zero to running 5K in 9 weeks",
+    category: "cardio",
+    difficulty: "beginner",
+    durationDays: 63,
+    rules: [
+      "Complete 3 running sessions per week",
+      "Rest at least one day between runs",
+      "Run at conversational pace",
+      "Walk breaks are allowed and encouraged",
+    ],
+    dailyTasks: [
+      { name: "Running Session", type: "workout", isRequired: true },
+      { name: "Stretching", type: "recovery", isRequired: false, description: "5-10 min post-run stretch" },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "🎉 YOU'RE A 5K RUNNER! You've proven that consistency beats talent!",
     milestones: [
       {
         order: 1,
@@ -81,15 +117,31 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
         requiredCompletions: 1,
         goalTargetValue: 5,
         goalTargetUnit: "km",
-        unlockMessage: "🎉 YOU DID IT! You're officially a 5K runner! 🏅",
+        unlockMessage: "🏅 YOU DID IT! You're officially a 5K runner!",
       },
     ],
   },
 
-  // 30-Day Push-Up Challenge
-  "30-Day Push-Up Challenge": {
-    difficultyLabel: "Getting Started 🌱",
-    brandingTheme: "playful",
+  // 2. 30-Day Push-Up Challenge
+  {
+    name: "30-Day Push-Up Challenge",
+    description: "Transform your upper body strength in 30 days. Start wherever you are and build up to 100 push-ups through progressive daily practice.",
+    shortDescription: "Build to 100 push-ups in 30 days",
+    category: "strength",
+    difficulty: "beginner",
+    durationDays: 30,
+    rules: [
+      "Complete daily push-up quota",
+      "Focus on form over speed",
+      "Can break into sets throughout the day",
+      "Modification allowed (knee push-ups to start)",
+    ],
+    dailyTasks: [
+      { name: "Daily Push-ups", type: "workout", isRequired: true },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "💪 CENTURY CLUB! You can do 100 push-ups! That's incredible!",
     milestones: [
       {
         order: 1,
@@ -132,10 +184,27 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
     ],
   },
 
-  // Pull-Up Progress
-  "Pull-Up Progress": {
-    difficultyLabel: "Leveling Up 💪",
-    brandingTheme: "fire",
+  // 3. Pull-Up Progress
+  {
+    name: "Pull-Up Progress",
+    description: "Master the pull-up in 10 weeks. Whether you can't do one yet or want to hit double digits, this program will get you there.",
+    shortDescription: "From zero to 10 pull-ups",
+    category: "strength",
+    difficulty: "intermediate",
+    durationDays: 70,
+    rules: [
+      "Train pull-ups 3-4 times per week",
+      "Rest at least one day between sessions",
+      "Use assisted variations if needed",
+      "Focus on full range of motion",
+    ],
+    dailyTasks: [
+      { name: "Pull-up Training", type: "workout", isRequired: true },
+      { name: "Grip Work", type: "workout", isRequired: false, description: "Dead hangs or farmer carries" },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "🦍 10 PULL-UPS! You've developed serious pulling power!",
     milestones: [
       {
         order: 1,
@@ -191,10 +260,27 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
     ],
   },
 
-  // Muscle Up Mission
-  "Muscle Up Mission": {
-    difficultyLabel: "Beast Mode 🔥",
-    brandingTheme: "fire",
+  // 4. Muscle Up Mission
+  {
+    name: "Muscle Up Mission",
+    description: "The ultimate calisthenics achievement. This 12-week program takes you from strong pull-ups to your first muscle-up.",
+    shortDescription: "Achieve your first muscle-up",
+    category: "strength",
+    difficulty: "advanced",
+    durationDays: 84,
+    rules: [
+      "Must have 10+ strict pull-ups before starting",
+      "Train 4-5 times per week",
+      "Include explosive pulling practice",
+      "Prioritize technique over strength",
+    ],
+    dailyTasks: [
+      { name: "Muscle-up Progressions", type: "workout", isRequired: true },
+      { name: "Dip Training", type: "workout", isRequired: true },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "🦾 MUSCLE UP ACHIEVED! You've reached elite calisthenics status!",
     milestones: [
       {
         order: 1,
@@ -248,10 +334,26 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
     ],
   },
 
-  // 100 Burpees a Day
-  "100 Burpees a Day": {
-    difficultyLabel: "Insane ☠️",
-    brandingTheme: "military",
+  // 5. 100 Burpees a Day
+  {
+    name: "100 Burpees a Day",
+    description: "30 days of 100 daily burpees. This isn't just a fitness challenge - it's a test of mental fortitude.",
+    shortDescription: "100 burpees every day for 30 days",
+    category: "hybrid",
+    difficulty: "extreme",
+    durationDays: 30,
+    rules: [
+      "100 burpees every single day",
+      "No rest days",
+      "Can break into sets throughout the day",
+      "Standard burpee with jump and chest to floor",
+    ],
+    dailyTasks: [
+      { name: "100 Burpees", type: "workout", isRequired: true },
+    ],
+    progressionType: "linear",
+    restartOnFail: true,
+    unlockMessage: "👑 LEGEND STATUS! 3,000 burpees in 30 days. You're unbreakable!",
     milestones: [
       {
         order: 1,
@@ -292,10 +394,26 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
     ],
   },
 
-  // Squat Challenge
-  "Squat Challenge": {
-    difficultyLabel: "Leveling Up 💪",
-    brandingTheme: "fire",
+  // 6. Squat Challenge
+  {
+    name: "30-Day Squat Challenge",
+    description: "Build powerful legs and glutes with daily squats. Progress from 50 to 250 squats over 30 days.",
+    shortDescription: "Work up to 250 squats per day",
+    category: "strength",
+    difficulty: "intermediate",
+    durationDays: 30,
+    rules: [
+      "Complete daily squat target",
+      "Full depth squats only",
+      "Can break into sets",
+      "Rest days built into progression",
+    ],
+    dailyTasks: [
+      { name: "Daily Squats", type: "workout", isRequired: true },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "🦵 SQUAT MASTER! Your legs are legendary!",
     milestones: [
       {
         order: 1,
@@ -329,10 +447,26 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
     ],
   },
 
-  // Plank Challenge
-  "Plank Challenge": {
-    difficultyLabel: "Getting Started 🌱",
-    brandingTheme: "zen",
+  // 7. Plank Challenge
+  {
+    name: "30-Day Plank Challenge",
+    description: "Build an iron core. Progress from 30-second holds to a 5-minute plank over 30 days.",
+    shortDescription: "Build to a 5-minute plank",
+    category: "strength",
+    difficulty: "beginner",
+    durationDays: 30,
+    rules: [
+      "One plank attempt per day",
+      "Strict plank form - no sagging or piking",
+      "Time your holds accurately",
+      "Rest days included in progression",
+    ],
+    dailyTasks: [
+      { name: "Plank Hold", type: "workout", isRequired: true },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "🔩 IRON CORE! A 5-minute plank is elite level!",
     milestones: [
       {
         order: 1,
@@ -370,10 +504,27 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
     ],
   },
 
-  // HIIT Warrior
-  "HIIT Warrior": {
-    difficultyLabel: "Beast Mode 🔥",
-    brandingTheme: "military",
+  // 8. 14-Day HIIT Warrior
+  {
+    name: "14-Day HIIT Warrior",
+    description: "Two weeks of intense HIIT training. Daily high-intensity workouts to boost metabolism and build conditioning.",
+    shortDescription: "14 days of daily HIIT",
+    category: "cardio",
+    difficulty: "advanced",
+    durationDays: 14,
+    rules: [
+      "Complete a HIIT workout every day",
+      "Each session 20-30 minutes",
+      "Give maximum effort on work intervals",
+      "Stay hydrated and fuel properly",
+    ],
+    dailyTasks: [
+      { name: "HIIT Workout", type: "workout", isRequired: true },
+      { name: "Hydration", type: "recovery", isRequired: false, description: "Drink 3+ liters of water" },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "⚔️ HIIT WARRIOR! You thrive in the fire!",
     milestones: [
       {
         order: 1,
@@ -405,10 +556,26 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
     ],
   },
 
-  // 10K Steps Daily
-  "10K Steps Daily": {
-    difficultyLabel: "Getting Started 🌱",
-    brandingTheme: "playful",
+  // 9. 10K Steps Daily
+  {
+    name: "30-Day 10K Steps",
+    description: "Walk 10,000 steps every day for 30 days. Simple but transformative for health and energy.",
+    shortDescription: "10,000 steps daily for a month",
+    category: "wellness",
+    difficulty: "beginner",
+    durationDays: 30,
+    rules: [
+      "Hit 10,000 steps every day",
+      "Track with phone or fitness device",
+      "No rest days",
+      "Any activity counts towards steps",
+    ],
+    dailyTasks: [
+      { name: "10K Steps", type: "custom", isRequired: true },
+    ],
+    progressionType: "linear",
+    restartOnFail: false,
+    unlockMessage: "🚶 WALKING CHAMPION! 300,000 steps completed!",
     milestones: [
       {
         order: 1,
@@ -441,48 +608,170 @@ const CHALLENGE_MILESTONES: Record<string, { difficultyLabel: string; brandingTh
       },
     ],
   },
-};
 
-// Generate SQL statements
-function generateChallengeUpdateSQL(challengeName: string, config: typeof CHALLENGE_MILESTONES[string]): string {
-  return `UPDATE challenges 
-SET difficulty_label = '${config.difficultyLabel}', branding_theme = '${config.brandingTheme}'
-WHERE name = '${challengeName.replace(/'/g, "''")}';`;
+  // 10. 75 Hard
+  {
+    name: "75 Hard",
+    description: "The ultimate mental toughness program. 75 days of strict discipline with zero compromise.",
+    shortDescription: "75 days of uncompromising discipline",
+    category: "transformation",
+    difficulty: "extreme",
+    durationDays: 75,
+    rules: [
+      "Follow a diet (any diet, no cheat meals, no alcohol)",
+      "Two 45-minute workouts per day (one must be outdoor)",
+      "Drink 1 gallon of water daily",
+      "Read 10 pages of non-fiction daily",
+      "Take a progress photo daily",
+      "If you miss any task, restart from Day 1",
+    ],
+    dailyTasks: [
+      { name: "Workout 1", type: "workout", isRequired: true, description: "45+ minutes, one must be outdoor" },
+      { name: "Workout 2", type: "workout", isRequired: true, description: "45+ minutes, one must be outdoor" },
+      { name: "Diet Compliance", type: "nutrition", isRequired: true, description: "No cheat meals, no alcohol" },
+      { name: "Water", type: "recovery", isRequired: true, description: "1 gallon minimum" },
+      { name: "Reading", type: "mindset", isRequired: true, description: "10 pages non-fiction" },
+      { name: "Progress Photo", type: "custom", isRequired: true },
+    ],
+    progressionType: "linear",
+    restartOnFail: true,
+    unlockMessage: "🏆 75 HARD COMPLETE! You've developed unbreakable mental fortitude!",
+    milestones: [
+      {
+        order: 1,
+        name: "Week 1: Initiation",
+        description: "Survive the first 7 days without restarting",
+        durationDays: 7,
+        completionType: "days",
+        requiredCompletions: 7,
+        unlockMessage: "First week down! The hardest part is starting 💪",
+      },
+      {
+        order: 2,
+        name: "Phase 1 Complete",
+        description: "Days 8-25: Build the foundation",
+        durationDays: 18,
+        completionType: "days",
+        requiredCompletions: 18,
+        unlockMessage: "25 days! You're adapting to the grind 🔥",
+      },
+      {
+        order: 3,
+        name: "Halfway There",
+        description: "Days 26-37: Push through the middle",
+        durationDays: 12,
+        completionType: "days",
+        requiredCompletions: 12,
+        unlockMessage: "HALFWAY! You've built serious discipline 💪💪",
+      },
+      {
+        order: 4,
+        name: "Phase 2 Complete",
+        description: "Days 38-55: Mental fortress",
+        durationDays: 18,
+        completionType: "days",
+        requiredCompletions: 18,
+        unlockMessage: "Day 55! You're becoming mentally unbreakable ⚔️",
+      },
+      {
+        order: 5,
+        name: "Final Stretch",
+        description: "Days 56-75: Finish what you started",
+        durationDays: 20,
+        completionType: "days",
+        requiredCompletions: 20,
+        unlockMessage: "🏆 75 HARD CHAMPION! You did the impossible!",
+      },
+    ],
+  },
+];
+
+async function seedChallenges() {
+  console.log(`Starting challenge seeding... (${CHALLENGES.length} challenges)`);
+
+  let successCount = 0;
+  let skipCount = 0;
+  let errorCount = 0;
+
+  for (const challengeDef of CHALLENGES) {
+    try {
+      // Check if challenge already exists
+      const existing = await db.query.challenges.findFirst({
+        where: (c, { eq }) => eq(c.name, challengeDef.name),
+      });
+
+      if (existing) {
+        console.log(`  ○ Challenge "${challengeDef.name}" already exists, skipping...`);
+        skipCount++;
+        continue;
+      }
+
+      console.log(`Creating challenge: ${challengeDef.name}`);
+
+      // Insert challenge
+      const [challenge] = await db.insert(challenges).values({
+        name: challengeDef.name,
+        description: challengeDef.description,
+        shortDescription: challengeDef.shortDescription,
+        category: challengeDef.category,
+        difficulty: challengeDef.difficulty,
+        durationDays: challengeDef.durationDays,
+        rules: challengeDef.rules,
+        dailyTasks: challengeDef.dailyTasks,
+        progressionType: challengeDef.progressionType,
+        restartOnFail: challengeDef.restartOnFail,
+        unlockMessage: challengeDef.unlockMessage,
+        visibility: "public",
+        isOfficial: true,
+        isFeatured: true,
+        participantCount: Math.floor(Math.random() * 500) + 50,
+        completionCount: Math.floor(Math.random() * 100) + 10,
+        avgCompletionRate: 0.3 + Math.random() * 0.4, // 30-70%
+        avgRating: 4 + Math.random(),
+        ratingCount: Math.floor(Math.random() * 50) + 10,
+        popularityScore: Math.random() * 100,
+      }).returning();
+
+      console.log(`  ✓ Created challenge: ${challenge.id}`);
+
+      // Insert milestones
+      for (const milestoneDef of challengeDef.milestones) {
+        await db.insert(challengeMilestones).values({
+          challengeId: challenge.id,
+          order: milestoneDef.order,
+          name: milestoneDef.name,
+          description: milestoneDef.description,
+          durationDays: milestoneDef.durationDays,
+          completionType: milestoneDef.completionType,
+          requiredCompletions: milestoneDef.requiredCompletions,
+          goalTargetValue: milestoneDef.goalTargetValue,
+          goalTargetUnit: milestoneDef.goalTargetUnit,
+          unlockMessage: milestoneDef.unlockMessage,
+        });
+      }
+
+      console.log(`    ✓ Created ${challengeDef.milestones.length} milestones`);
+      successCount++;
+    } catch (error) {
+      console.error(`  ✗ Error creating challenge "${challengeDef.name}":`, error);
+      errorCount++;
+    }
+  }
+
+  console.log(`\nChallenge seeding complete:`);
+  console.log(`  ✓ Inserted: ${successCount}`);
+  console.log(`  ○ Skipped (existing): ${skipCount}`);
+  console.log(`  ✗ Errors: ${errorCount}`);
+  console.log(`  Total: ${CHALLENGES.length}`);
 }
 
-function generateMilestoneSQL(challengeName: string, milestone: MilestoneDefinition): string {
-  const id = crypto.randomUUID();
-  
-  return `INSERT INTO challenge_milestones (id, challenge_id, "order", name, description, duration_days, completion_type, required_completions, goal_target_value, goal_target_unit, unlock_message, created_at)
-SELECT '${id}', c.id, ${milestone.order}, '${milestone.name.replace(/'/g, "''")}', '${milestone.description.replace(/'/g, "''")}', ${milestone.durationDays || "NULL"}, '${milestone.completionType}', ${milestone.requiredCompletions}, ${milestone.goalTargetValue || "NULL"}, ${milestone.goalTargetUnit ? `'${milestone.goalTargetUnit}'` : "NULL"}, '${milestone.unlockMessage.replace(/'/g, "''")}', NOW()
-FROM challenges c
-WHERE c.name = '${challengeName.replace(/'/g, "''")}'
-ON CONFLICT DO NOTHING;`;
-}
-
-// Print all SQL statements
-console.log("-- Seed Challenge Milestones and Fun Branding");
-console.log("-- Run these statements in your database\n");
-
-console.log("-- =====================");
-console.log("-- UPDATE CHALLENGE BRANDING");
-console.log("-- =====================\n");
-
-Object.entries(CHALLENGE_MILESTONES).forEach(([name, config]) => {
-  console.log(generateChallengeUpdateSQL(name, config));
-  console.log();
-});
-
-console.log("\n-- =====================");
-console.log("-- ADD MILESTONES");
-console.log("-- =====================\n");
-
-Object.entries(CHALLENGE_MILESTONES).forEach(([challengeName, config]) => {
-  console.log(`-- ${challengeName}`);
-  config.milestones.forEach((milestone) => {
-    console.log(generateMilestoneSQL(challengeName, milestone));
-    console.log();
+// Run the seed
+seedChallenges()
+  .then(() => {
+    console.log("\nSeeding finished successfully!");
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Seeding failed:", err);
+    process.exit(1);
   });
-});
-
-console.log("\n-- Done! Copy and run these SQL statements in your database.");

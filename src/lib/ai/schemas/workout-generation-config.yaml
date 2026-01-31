@@ -1,0 +1,422 @@
+# Workout Generation Configuration
+# This schema defines all configurable parameters for AI-generated workouts
+# Used by the workout generation API to create personalized workout plans
+
+workout_generation_config:
+  version: "1.0.0"
+  
+  # =============================================================================
+  # INTENSITY PARAMETERS
+  # =============================================================================
+  intensity:
+    levels:
+      deload:
+        label: "Deload"
+        description: "Recovery week - reduced intensity and volume"
+        rpe_range: [5, 6]
+        volume_modifier: 0.6
+        rest_modifier: 1.2
+        
+      light:
+        label: "Light"
+        description: "Active recovery or easy day"
+        rpe_range: [6, 7]
+        volume_modifier: 0.75
+        rest_modifier: 1.1
+        
+      moderate:
+        label: "Moderate"
+        description: "Standard training intensity"
+        rpe_range: [7, 8]
+        volume_modifier: 1.0
+        rest_modifier: 1.0
+        
+      heavy:
+        label: "Heavy"
+        description: "High intensity, focus on progression"
+        rpe_range: [8, 9]
+        volume_modifier: 0.85
+        rest_modifier: 1.3
+        
+      max_effort:
+        label: "Max Effort"
+        description: "Testing day or peak intensity"
+        rpe_range: [9, 10]
+        volume_modifier: 0.6
+        rest_modifier: 1.5
+        
+    default: "moderate"
+    
+  # =============================================================================
+  # DURATION PARAMETERS
+  # =============================================================================
+  duration:
+    # Available workout duration options (in minutes)
+    options: [15, 20, 30, 45, 60, 75, 90, 120]
+    
+    # Mapping of duration to exercise count ranges
+    exercise_count_mapping:
+      15:
+        min: 3
+        max: 4
+        typical_structure: "circuit"
+      20:
+        min: 3
+        max: 5
+        typical_structure: "circuit"
+      30:
+        min: 4
+        max: 6
+        typical_structure: "standard"
+      45:
+        min: 6
+        max: 8
+        typical_structure: "standard"
+      60:
+        min: 8
+        max: 10
+        typical_structure: "standard"
+      75:
+        min: 10
+        max: 12
+        typical_structure: "standard"
+      90:
+        min: 12
+        max: 14
+        typical_structure: "ppl"
+      120:
+        min: 14
+        max: 18
+        typical_structure: "full_body"
+        
+    # Time allocation per exercise (in seconds)
+    time_per_exercise:
+      compound:
+        warmup_sets: 60
+        working_sets: 90
+        rest_between_sets: 120
+      isolation:
+        warmup_sets: 30
+        working_sets: 60
+        rest_between_sets: 60
+      cardio:
+        per_set: 60
+        rest_between_sets: 30
+        
+    default: 45
+    
+  # =============================================================================
+  # VOLUME PARAMETERS
+  # =============================================================================
+  volume:
+    # Weekly sets per muscle group
+    sets_per_muscle_weekly:
+      absolute_minimum: 6
+      minimum_effective: 10
+      maximum_effective: 20
+      diminishing_returns: 25
+      
+      by_goal:
+        maintenance:
+          min: 6
+          max: 10
+          description: "Maintain current muscle mass"
+        hypertrophy:
+          min: 12
+          max: 20
+          description: "Maximize muscle growth"
+        strength:
+          min: 8
+          max: 15
+          description: "Focus on strength gains"
+        endurance:
+          min: 15
+          max: 25
+          description: "Build muscular endurance"
+          
+    # Sets per exercise per session
+    sets_per_exercise:
+      compound:
+        min: 3
+        max: 5
+        typical: 4
+      isolation:
+        min: 2
+        max: 4
+        typical: 3
+      cardio:
+        min: 1
+        max: 3
+        typical: 1
+        
+    # Rep ranges by goal
+    rep_ranges:
+      strength:
+        primary: [3, 6]
+        secondary: [6, 8]
+      hypertrophy:
+        primary: [8, 12]
+        secondary: [6, 15]
+      endurance:
+        primary: [12, 20]
+        secondary: [15, 30]
+      power:
+        primary: [1, 5]
+        secondary: [3, 6]
+        
+  # =============================================================================
+  # EXERCISE SELECTION PARAMETERS
+  # =============================================================================
+  exercise_selection:
+    # Variety constraints
+    variety:
+      # Avoid same exercise within N days
+      avoid_same_exercise_within_days: 3
+      # Maximum times per week for same exercise
+      max_same_exercise_per_week: 3
+      # Minimum unique exercises per muscle group
+      min_unique_exercises_per_muscle: 2
+      
+    # Compound to isolation ratio by goal
+    compound_isolation_ratio:
+      strength:
+        compound: 0.7
+        isolation: 0.3
+        description: "Heavy compound focus"
+      hypertrophy:
+        compound: 0.5
+        isolation: 0.5
+        description: "Balanced for muscle growth"
+      endurance:
+        compound: 0.3
+        isolation: 0.7
+        description: "More isolation and pump work"
+      functional:
+        compound: 0.8
+        isolation: 0.2
+        description: "Prioritize functional movements"
+        
+    # Movement pattern balance
+    movement_patterns:
+      upper:
+        - horizontal_push  # bench, push-up
+        - horizontal_pull  # row
+        - vertical_push    # overhead press
+        - vertical_pull    # pull-up, lat pulldown
+      lower:
+        - squat           # squats, leg press
+        - hinge           # deadlift, rdl
+        - lunge           # lunges, step-ups
+        - isolation       # leg curl, leg extension
+        
+    # Prioritize patterns by goal
+    pattern_priority:
+      strength:
+        - squat
+        - hinge
+        - horizontal_push
+        - horizontal_pull
+      hypertrophy:
+        - horizontal_push
+        - horizontal_pull
+        - squat
+        - isolation
+      athletic:
+        - squat
+        - hinge
+        - vertical_push
+        - vertical_pull
+        
+  # =============================================================================
+  # TEMPO CONFIGURATION
+  # =============================================================================
+  tempo:
+    enabled: false  # Set to true to include tempo in workout generation
+    
+    # Tempo notation: eccentric-pause_bottom-concentric-pause_top (in seconds)
+    presets:
+      standard:
+        value: "2-0-2-0"
+        description: "Standard controlled tempo"
+      controlled:
+        value: "3-1-2-0"
+        description: "Slower eccentric with pause"
+      explosive:
+        value: "1-0-X-0"
+        description: "Fast/explosive concentric"
+      time_under_tension:
+        value: "4-2-4-0"
+        description: "Maximum time under tension"
+      isometric:
+        value: "2-5-2-0"
+        description: "Extended pause for isometric hold"
+        
+    # Suggested tempo by exercise type
+    by_exercise_type:
+      compound_strength: "3-1-1-0"
+      compound_hypertrophy: "3-0-2-0"
+      isolation: "2-1-2-1"
+      power: "1-0-X-0"
+      
+  # =============================================================================
+  # GENERATION PRESETS
+  # =============================================================================
+  presets:
+    quick_pump:
+      label: "Quick Pump"
+      description: "Fast-paced session with minimal rest"
+      duration: 30
+      intensity: moderate
+      exercise_count: [5, 6]
+      focus: isolation
+      structure: superset
+      rest_periods: short
+      
+    strength_session:
+      label: "Strength Session"
+      description: "Heavy compounds with full rest"
+      duration: 60
+      intensity: heavy
+      exercise_count: [6, 8]
+      focus: compound
+      structure: standard
+      rest_periods: long
+      
+    full_body_blast:
+      label: "Full Body Blast"
+      description: "Hit all muscle groups"
+      duration: 45
+      intensity: moderate
+      exercise_count: [8, 10]
+      focus: balanced
+      structure: standard
+      rest_periods: moderate
+      
+    hypertrophy_focus:
+      label: "Hypertrophy Focus"
+      description: "High volume for muscle growth"
+      duration: 60
+      intensity: moderate
+      exercise_count: [8, 12]
+      focus: balanced
+      structure: standard
+      rest_periods: moderate
+      
+    hiit_circuit:
+      label: "HIIT Circuit"
+      description: "High intensity with minimal rest"
+      duration: 20
+      intensity: heavy
+      exercise_count: [6, 8]
+      focus: compound
+      structure: circuit
+      rest_periods: minimal
+      
+    deload_session:
+      label: "Deload Session"
+      description: "Active recovery with reduced intensity"
+      duration: 30
+      intensity: deload
+      exercise_count: [4, 6]
+      focus: balanced
+      structure: standard
+      rest_periods: long
+      
+    morning_activation:
+      label: "Morning Activation"
+      description: "Quick energizing workout"
+      duration: 15
+      intensity: light
+      exercise_count: [3, 4]
+      focus: compound
+      structure: circuit
+      rest_periods: minimal
+      
+    evening_wind_down:
+      label: "Evening Wind-Down"
+      description: "Lower intensity, mobility focus"
+      duration: 30
+      intensity: light
+      exercise_count: [6, 8]
+      focus: mobility
+      structure: standard
+      rest_periods: moderate
+      
+  # =============================================================================
+  # REST PERIOD CONFIGURATION
+  # =============================================================================
+  rest_periods:
+    categories:
+      minimal:
+        between_sets: [15, 30]
+        between_exercises: [30, 60]
+        description: "Circuit/HIIT style"
+      short:
+        between_sets: [30, 60]
+        between_exercises: [60, 90]
+        description: "Hypertrophy/pump style"
+      moderate:
+        between_sets: [60, 120]
+        between_exercises: [90, 150]
+        description: "Standard training"
+      long:
+        between_sets: [120, 240]
+        between_exercises: [180, 300]
+        description: "Strength/power training"
+        
+    # Rest modifiers by exercise type
+    by_exercise:
+      compound_heavy: 1.5
+      compound_moderate: 1.0
+      isolation: 0.7
+      cardio: 0.5
+      
+  # =============================================================================
+  # MUSCLE RECOVERY STATUS INTEGRATION
+  # =============================================================================
+  recovery_integration:
+    # Adjust exercise selection based on muscle recovery
+    enabled: true
+    
+    # Recovery status thresholds (hours since last worked)
+    thresholds:
+      fully_recovered: 72
+      mostly_recovered: 48
+      partially_recovered: 24
+      still_recovering: 0
+      
+    # Volume adjustments by recovery status
+    volume_adjustment:
+      fully_recovered: 1.0
+      mostly_recovered: 0.85
+      partially_recovered: 0.6
+      still_recovering: 0.0  # Skip muscle group
+      
+    # Prefer fresh muscles when possible
+    prefer_fresh_muscles: true
+    
+  # =============================================================================
+  # PERIODIZATION SETTINGS
+  # =============================================================================
+  periodization:
+    # Week-to-week progression
+    weekly_progression:
+      volume_increase_rate: 0.05  # 5% per week
+      intensity_increase_rate: 0.025  # 2.5% per week
+      max_weeks_before_deload: 4
+      
+    # Deload parameters
+    deload:
+      frequency_weeks: 4
+      volume_reduction: 0.4
+      intensity_reduction: 0.2
+      duration_reduction: 0.25
+      
+    # Mesocycle structure
+    mesocycle:
+      typical_length_weeks: 4
+      phases:
+        - accumulation  # Volume focus
+        - intensification  # Intensity focus
+        - realization  # Performance testing
+        - deload  # Recovery

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { userProfiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { moderateText } from "@/lib/moderation";
 
 export async function GET() {
   try {
@@ -97,6 +98,17 @@ export async function PUT(request: Request) {
     const profileData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
+
+    // Moderate bio content if provided
+    if (body.bio !== undefined && body.bio.length > 0) {
+      const bioModeration = moderateText(body.bio);
+      if (!bioModeration.isClean && bioModeration.severity !== "mild") {
+        return NextResponse.json(
+          { error: "Bio contains inappropriate content. Please revise." },
+          { status: 400 }
+        );
+      }
+    }
 
     // Only update fields that are provided
     if (body.handle !== undefined) profileData.handle = body.handle;

@@ -3,8 +3,31 @@
  * Run: npx tsx scripts/seed-exercises.ts
  */
 
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
+import { db } from "../src/lib/db";
+import { exercises } from "../src/lib/db/schema";
+import { sql } from "drizzle-orm";
+
+// Exercise type matching the database schema
+interface ExerciseData {
+  name: string;
+  description?: string;
+  instructions?: string;
+  category: string;
+  muscleGroups: string[];
+  secondaryMuscles: string[];
+  equipment: string[];
+  difficulty: string;
+  force: string;
+  mechanic: string;
+  benefits: string[];
+  tags: string[];
+}
+
 // Exercise data organized by category
-export const EXERCISES = [
+export const EXERCISES: ExerciseData[] = [
   // ============================================================================
   // STRENGTH - COMPOUND (30 exercises)
   // ============================================================================
@@ -2386,7 +2409,7 @@ export const EXERCISES = [
   },
 
   // ============================================================================
-  // SPORT-SPECIFIC / AGILITY (30 exercises)
+  // SPORT-SPECIFIC / AGILITY / KETTLEBELL / STRONGMAN (30 exercises)
   // ============================================================================
   {
     name: "Ladder Drill - In-Out",
@@ -2499,118 +2522,6 @@ export const EXERCISES = [
     mechanic: "compound",
     benefits: ["hip mobility", "coordination"],
     tags: ["agility", "warmup"],
-  },
-  {
-    name: "Sprint Start",
-    description: "Explosive acceleration from standing or blocks.",
-    instructions: "Drive out of stance with powerful arm and leg action.",
-    category: "sport",
-    muscleGroups: ["quadriceps", "glutes", "hamstrings"],
-    secondaryMuscles: ["calves", "core"],
-    equipment: ["track"],
-    difficulty: "intermediate",
-    force: "push",
-    mechanic: "compound",
-    benefits: ["acceleration", "power"],
-    tags: ["sprinting", "speed"],
-  },
-  {
-    name: "A-Skip",
-    description: "Skipping drill for running mechanics.",
-    instructions: "Skip while driving knee high with each step.",
-    category: "sport",
-    muscleGroups: ["hip flexors", "calves"],
-    secondaryMuscles: ["quadriceps"],
-    equipment: ["none"],
-    difficulty: "beginner",
-    force: "dynamic",
-    mechanic: "compound",
-    benefits: ["running mechanics"],
-    tags: ["warmup", "sprinting"],
-  },
-  {
-    name: "B-Skip",
-    description: "Skipping drill with leg extension.",
-    instructions: "A-skip with leg extending forward before ground contact.",
-    category: "sport",
-    muscleGroups: ["hip flexors", "hamstrings"],
-    secondaryMuscles: ["calves"],
-    equipment: ["none"],
-    difficulty: "intermediate",
-    force: "dynamic",
-    mechanic: "compound",
-    benefits: ["running mechanics"],
-    tags: ["warmup", "sprinting"],
-  },
-  {
-    name: "High Knee Run",
-    description: "Running with exaggerated knee drive.",
-    instructions: "Run driving knees to hip height with each stride.",
-    category: "sport",
-    muscleGroups: ["hip flexors", "calves"],
-    secondaryMuscles: ["quadriceps", "core"],
-    equipment: ["none"],
-    difficulty: "beginner",
-    force: "dynamic",
-    mechanic: "compound",
-    benefits: ["running mechanics", "conditioning"],
-    tags: ["warmup", "sprinting"],
-  },
-  {
-    name: "Butt Kicks",
-    description: "Running with heels kicking towards glutes.",
-    instructions: "Run with focus on bringing heels to glutes quickly.",
-    category: "sport",
-    muscleGroups: ["hamstrings", "calves"],
-    secondaryMuscles: ["quadriceps"],
-    equipment: ["none"],
-    difficulty: "beginner",
-    force: "dynamic",
-    mechanic: "compound",
-    benefits: ["running mechanics"],
-    tags: ["warmup", "sprinting"],
-  },
-  {
-    name: "Wall Drive",
-    description: "Sprint drill against wall for drive phase.",
-    instructions: "Lean against wall, drive knees alternately mimicking sprint start.",
-    category: "sport",
-    muscleGroups: ["hip flexors", "glutes"],
-    secondaryMuscles: ["core", "calves"],
-    equipment: ["wall"],
-    difficulty: "beginner",
-    force: "dynamic",
-    mechanic: "compound",
-    benefits: ["sprint mechanics"],
-    tags: ["sprinting", "technique"],
-  },
-  {
-    name: "Resisted Sprint",
-    description: "Sprinting against band or sled resistance.",
-    instructions: "Sprint while pulling against resistance from sled or band.",
-    category: "sport",
-    muscleGroups: ["quadriceps", "glutes", "hamstrings"],
-    secondaryMuscles: ["calves", "core"],
-    equipment: ["sled", "resistance band"],
-    difficulty: "intermediate",
-    force: "push",
-    mechanic: "compound",
-    benefits: ["acceleration", "power"],
-    tags: ["sprinting", "resisted"],
-  },
-  {
-    name: "Overspeed Sprint",
-    description: "Sprinting with assistance for supramaximal speed.",
-    instructions: "Sprint downhill or with band assistance to run faster than max.",
-    category: "sport",
-    muscleGroups: ["hamstrings", "hip flexors"],
-    secondaryMuscles: ["quadriceps", "calves"],
-    equipment: ["hill", "band"],
-    difficulty: "advanced",
-    force: "dynamic",
-    mechanic: "compound",
-    benefits: ["max velocity"],
-    tags: ["sprinting", "advanced"],
   },
   {
     name: "Kettlebell Swing",
@@ -2808,44 +2719,166 @@ export const EXERCISES = [
     benefits: ["upper body strength"],
     tags: ["crossfit", "advanced"],
   },
+  {
+    name: "Sit-up",
+    description: "Basic abdominal flexion exercise.",
+    instructions: "Lie on back, knees bent, curl up bringing chest to knees.",
+    category: "strength",
+    muscleGroups: ["core"],
+    secondaryMuscles: ["hip flexors"],
+    equipment: ["bodyweight"],
+    difficulty: "beginner",
+    force: "pull",
+    mechanic: "isolation",
+    benefits: ["core strength"],
+    tags: ["core", "fundamental"],
+  },
+  {
+    name: "Decline Bench Press",
+    description: "Lower chest focused pressing variation.",
+    instructions: "Set bench to decline, grip bar, lower to lower chest, press to lockout.",
+    category: "strength",
+    muscleGroups: ["lower chest", "triceps"],
+    secondaryMuscles: ["anterior deltoids"],
+    equipment: ["barbell", "decline bench"],
+    difficulty: "intermediate",
+    force: "push",
+    mechanic: "compound",
+    benefits: ["strength", "muscle growth"],
+    tags: ["chest", "pressing"],
+  },
+  {
+    name: "Incline Dumbbell Fly",
+    description: "Upper chest fly on incline bench.",
+    instructions: "Set bench to 30-45 degrees, lower dumbbells in arc, squeeze chest to bring together.",
+    category: "strength",
+    muscleGroups: ["upper chest"],
+    secondaryMuscles: ["anterior deltoids"],
+    equipment: ["dumbbells", "incline bench"],
+    difficulty: "beginner",
+    force: "push",
+    mechanic: "isolation",
+    benefits: ["muscle growth", "stretch"],
+    tags: ["chest", "isolation"],
+  },
+  {
+    name: "Dumbbell Lateral Raise",
+    description: "Lateral raise with dumbbells for side delt development.",
+    instructions: "Stand with dumbbells at sides, raise to shoulder height, lower with control.",
+    category: "strength",
+    muscleGroups: ["lateral deltoids"],
+    secondaryMuscles: ["traps"],
+    equipment: ["dumbbells"],
+    difficulty: "beginner",
+    force: "pull",
+    mechanic: "isolation",
+    benefits: ["muscle growth", "shoulder width"],
+    tags: ["shoulders", "deltoids"],
+  },
+  {
+    name: "A-Skip",
+    description: "Skipping drill for running mechanics.",
+    instructions: "Skip while driving knee high with each step.",
+    category: "sport",
+    muscleGroups: ["hip flexors", "calves"],
+    secondaryMuscles: ["quadriceps"],
+    equipment: ["none"],
+    difficulty: "beginner",
+    force: "dynamic",
+    mechanic: "compound",
+    benefits: ["running mechanics"],
+    tags: ["warmup", "sprinting"],
+  },
+  {
+    name: "B-Skip",
+    description: "Skipping drill with leg extension.",
+    instructions: "A-skip with leg extending forward before ground contact.",
+    category: "sport",
+    muscleGroups: ["hip flexors", "hamstrings"],
+    secondaryMuscles: ["calves"],
+    equipment: ["none"],
+    difficulty: "intermediate",
+    force: "dynamic",
+    mechanic: "compound",
+    benefits: ["running mechanics"],
+    tags: ["warmup", "sprinting"],
+  },
+  {
+    name: "Butt Kicks",
+    description: "Running with heels kicking towards glutes.",
+    instructions: "Run with focus on bringing heels to glutes quickly.",
+    category: "sport",
+    muscleGroups: ["hamstrings", "calves"],
+    secondaryMuscles: ["quadriceps"],
+    equipment: ["none"],
+    difficulty: "beginner",
+    force: "dynamic",
+    mechanic: "compound",
+    benefits: ["running mechanics"],
+    tags: ["warmup", "sprinting"],
+  },
 ];
 
-// Helper to generate SQL INSERT statements
-function generateExerciseInserts() {
-  const values = EXERCISES.map((ex, i) => {
-    const muscleGroups = JSON.stringify(ex.muscleGroups || []).replace(/'/g, "''");
-    const secondaryMuscles = JSON.stringify(ex.secondaryMuscles || []).replace(/'/g, "''");
-    const equipment = JSON.stringify(ex.equipment || []).replace(/'/g, "''");
-    const benefits = JSON.stringify(ex.benefits || []).replace(/'/g, "''");
-    const tags = JSON.stringify(ex.tags || []).replace(/'/g, "''");
-    
-    return `(
-      gen_random_uuid(),
-      '${ex.name.replace(/'/g, "''")}',
-      '${(ex.description || '').replace(/'/g, "''")}',
-      '${(ex.instructions || '').replace(/'/g, "''")}',
-      '${ex.category}',
-      '${muscleGroups}'::jsonb,
-      '${secondaryMuscles}'::jsonb,
-      '${equipment}'::jsonb,
-      '${ex.difficulty}',
-      '${ex.force}',
-      '${ex.mechanic}',
-      '${benefits}'::jsonb,
-      '${tags}'::jsonb,
-      true,
-      false,
-      'system',
-      NOW(),
-      NOW()
-    )`;
-  });
-  
-  return `INSERT INTO exercises (
-    id, name, description, instructions, category, muscle_groups, secondary_muscles,
-    equipment, difficulty, force, mechanic, benefits, tags, is_active, is_custom, source, created_at, updated_at
-  ) VALUES ${values.join(',\n')};`;
+// Main seeding function
+async function seedExercises() {
+  console.log(`Starting exercise seeding... (${EXERCISES.length} exercises)`);
+
+  let successCount = 0;
+  let skipCount = 0;
+  let errorCount = 0;
+
+  for (const exercise of EXERCISES) {
+    try {
+      // Check if exercise already exists
+      const existing = await db.query.exercises.findFirst({
+        where: (e, { eq }) => eq(e.name, exercise.name),
+      });
+
+      if (existing) {
+        skipCount++;
+        continue;
+      }
+
+      // Insert exercise
+      await db.insert(exercises).values({
+        name: exercise.name,
+        description: exercise.description,
+        instructions: exercise.instructions,
+        category: exercise.category,
+        muscleGroups: exercise.muscleGroups,
+        secondaryMuscles: exercise.secondaryMuscles,
+        equipment: exercise.equipment,
+        difficulty: exercise.difficulty,
+        force: exercise.force,
+        mechanic: exercise.mechanic,
+        benefits: exercise.benefits,
+        tags: exercise.tags,
+        isActive: true,
+        isCustom: false,
+        source: "system",
+      });
+
+      successCount++;
+    } catch (error) {
+      console.error(`Error inserting exercise "${exercise.name}":`, error);
+      errorCount++;
+    }
+  }
+
+  console.log(`\nExercise seeding complete:`);
+  console.log(`  ✓ Inserted: ${successCount}`);
+  console.log(`  ○ Skipped (existing): ${skipCount}`);
+  console.log(`  ✗ Errors: ${errorCount}`);
+  console.log(`  Total: ${EXERCISES.length}`);
 }
 
-console.log(`// Total exercises: ${EXERCISES.length}`);
-console.log(generateExerciseInserts());
+// Run the seed
+seedExercises()
+  .then(() => {
+    console.log("\nSeeding finished successfully!");
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Seeding failed:", err);
+    process.exit(1);
+  });

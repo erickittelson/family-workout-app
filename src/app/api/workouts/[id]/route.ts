@@ -24,19 +24,37 @@ export async function GET(
   const { id } = await params;
 
   try {
-    // Get shared workout with workout plan details
-    const sharedWorkout = await db.query.sharedWorkouts.findFirst({
+    // First try to get shared workout
+    let sharedWorkout = await db.query.sharedWorkouts.findFirst({
       where: eq(sharedWorkouts.id, id),
     });
 
-    if (!sharedWorkout) {
-      return NextResponse.json({ error: "Workout not found" }, { status: 404 });
+    // If not found as sharedWorkout, try to find by workoutPlanId directly
+    // This handles cases where program workouts reference workout plans directly
+    let workoutPlan = null;
+    
+    if (sharedWorkout) {
+      // Get the workout plan details from sharedWorkout reference
+      workoutPlan = await db.query.workoutPlans.findFirst({
+        where: eq(workoutPlans.id, sharedWorkout.workoutPlanId),
+      });
+    } else {
+      // Try to find as a workoutPlan directly
+      workoutPlan = await db.query.workoutPlans.findFirst({
+        where: eq(workoutPlans.id, id),
+      });
+      
+      // If found as workoutPlan, check if there's a sharedWorkout that references it
+      if (workoutPlan) {
+        sharedWorkout = await db.query.sharedWorkouts.findFirst({
+          where: eq(sharedWorkouts.workoutPlanId, workoutPlan.id),
+        });
+      }
     }
 
-    // Get the workout plan details
-    const workoutPlan = await db.query.workoutPlans.findFirst({
-      where: eq(workoutPlans.id, sharedWorkout.workoutPlanId),
-    });
+    if (!workoutPlan && !sharedWorkout) {
+      return NextResponse.json({ error: "Workout not found" }, { status: 404 });
+    }
 
     // Get exercises for this workout with full details
     const workoutExercises = workoutPlan
@@ -98,24 +116,24 @@ export async function GET(
     const programs = Array.from(programsMap.values());
 
     return NextResponse.json({
-      id: sharedWorkout.id,
-      title: sharedWorkout.title,
-      description: sharedWorkout.description,
-      category: sharedWorkout.category,
-      difficulty: sharedWorkout.difficulty,
-      estimatedDuration: sharedWorkout.estimatedDuration,
-      targetMuscles: sharedWorkout.targetMuscles,
-      equipmentRequired: sharedWorkout.equipmentRequired,
+      id: sharedWorkout?.id || workoutPlan?.id || id,
+      title: sharedWorkout?.title || workoutPlan?.name || "Workout",
+      description: sharedWorkout?.description || workoutPlan?.description || null,
+      category: sharedWorkout?.category || workoutPlan?.category || null,
+      difficulty: sharedWorkout?.difficulty || workoutPlan?.difficulty || null,
+      estimatedDuration: sharedWorkout?.estimatedDuration || workoutPlan?.estimatedDuration || null,
+      targetMuscles: sharedWorkout?.targetMuscles || [],
+      equipmentRequired: sharedWorkout?.equipmentRequired || [],
       structureType: workoutPlan?.structureType,
       timeCapSeconds: workoutPlan?.timeCapSeconds,
       roundsTarget: workoutPlan?.roundsTarget,
       scoringType: workoutPlan?.scoringType,
-      saveCount: sharedWorkout.saveCount,
-      useCount: sharedWorkout.useCount,
-      avgRating: sharedWorkout.avgRating,
-      reviewCount: sharedWorkout.reviewCount,
-      isOfficial: sharedWorkout.isFeatured,
-      isFeatured: sharedWorkout.isFeatured,
+      saveCount: sharedWorkout?.saveCount || 0,
+      useCount: sharedWorkout?.useCount || 0,
+      avgRating: sharedWorkout?.avgRating || null,
+      reviewCount: sharedWorkout?.reviewCount || 0,
+      isOfficial: sharedWorkout?.isFeatured || false,
+      isFeatured: sharedWorkout?.isFeatured || false,
       isSaved: !!savedEntry,
       exercises: workoutExercises.map((e) => ({
         id: e.id,

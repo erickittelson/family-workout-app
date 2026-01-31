@@ -80,6 +80,8 @@ export const circles = pgTable(
       unit?: string;
       description?: string;
     }>>().default([]),
+    // System circle for official content management
+    isSystemCircle: boolean("is_system_circle").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -87,6 +89,7 @@ export const circles = pgTable(
     index("circles_visibility_idx").on(circle.visibility),
     index("circles_category_idx").on(circle.category),
     index("circles_focus_area_idx").on(circle.focusArea),
+    index("circles_system_idx").on(circle.isSystemCircle),
     index("circles_target_demographic_idx").on(circle.targetDemographic),
     index("circles_join_type_idx").on(circle.joinType),
   ]
@@ -849,6 +852,21 @@ export const userProfiles = pgTable(
         personalization: false,
         doNotSell: false,
       }),
+    // Workout preferences (collected during onboarding)
+    workoutPreferences: jsonb("workout_preferences")
+      .$type<{
+        workoutDays?: string[]; // ["monday", "wednesday", "friday"]
+        workoutDuration?: number; // minutes
+        trainingFrequency?: number; // days per week
+        activityLevel?: {
+          jobType?: "sedentary" | "light" | "moderate" | "active" | "very_active";
+          dailySteps?: number;
+          description?: string;
+        };
+        currentActivity?: string;
+        secondaryGoals?: string[];
+      }>()
+      .default({}),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1300,6 +1318,130 @@ export const programWorkoutProgress = pgTable(
     index("program_workout_progress_workout_idx").on(progress.programWorkoutId),
   ]
 );
+
+// ============================================================================
+// USER PROGRAM SCHEDULES (Advanced scheduling system)
+// ============================================================================
+
+/**
+ * User Program Schedules - Custom scheduling preferences for enrolled programs
+ * Allows users to customize which days they do workouts within a program
+ */
+export const userProgramSchedules = pgTable(
+  "user_program_schedules",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => programEnrollments.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(),
+    
+    // Day preferences (which days of the week user prefers to workout)
+    preferredDays: jsonb("preferred_days").$type<number[]>().default([1, 3, 5]).notNull(), // 0=Sun, 1=Mon, etc.
+    
+    // Time preferences
+    preferredTimeSlot: text("preferred_time_slot"), // morning, afternoon, evening, late_night
+    reminderTime: text("reminder_time"), // HH:MM format
+    
+    // Auto-reschedule settings
+    autoReschedule: boolean("auto_reschedule").default(true).notNull(), // Automatically move missed workouts
+    rescheduleWindowDays: integer("reschedule_window_days").default(2).notNull(), // How many days to look ahead for rescheduling
+    
+    // Rest day preferences
+    minRestDays: integer("min_rest_days").default(1).notNull(), // Minimum rest days between workouts
+    maxConsecutiveWorkoutDays: integer("max_consecutive_workout_days").default(3).notNull(),
+    
+    // Vacation/skip mode
+    pausedUntil: timestamp("paused_until", { withTimezone: true }), // If set, schedule is paused until this date
+    pauseReason: text("pause_reason"),
+    
+    // Metadata
+    lastScheduleGeneratedAt: timestamp("last_schedule_generated_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (schedule) => [
+    index("user_program_schedules_enrollment_idx").on(schedule.enrollmentId),
+    index("user_program_schedules_user_idx").on(schedule.userId),
+    uniqueIndex("user_program_schedules_unique_idx").on(schedule.enrollmentId),
+  ]
+);
+
+/**
+ * Scheduled Workouts - Individual workout instances on the calendar
+ * Represents the actual scheduled occurrence of a program workout
+ */
+export const scheduledWorkouts = pgTable(
+  "scheduled_workouts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    scheduleId: uuid("schedule_id")
+      .notNull()
+      .references(() => userProgramSchedules.id, { onDelete: "cascade" }),
+    programWorkoutId: uuid("program_workout_id")
+      .notNull()
+      .references(() => programWorkouts.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(),
+    
+    // Scheduling
+    scheduledDate: date("scheduled_date").notNull(), // The date this workout is scheduled for
+    scheduledTime: text("scheduled_time"), // Optional preferred time (HH:MM)
+    originalDate: date("original_date"), // If rescheduled, the original date it was scheduled for
+    
+    // Status tracking
+    status: text("status").default("scheduled").notNull(), // scheduled, completed, skipped, missed, rescheduled
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    skippedAt: timestamp("skipped_at", { withTimezone: true }),
+    skippedReason: text("skipped_reason"),
+    
+    // Rescheduling info
+    rescheduledCount: integer("rescheduled_count").default(0).notNull(),
+    rescheduledFrom: date("rescheduled_from"), // Previous date if this is a rescheduled workout
+    rescheduledReason: text("rescheduled_reason"),
+    
+    // Link to actual workout session when completed
+    workoutSessionId: uuid("workout_session_id").references(() => workoutSessions.id, { onDelete: "set null" }),
+    
+    // User notes
+    notes: text("notes"),
+    
+    // Metadata
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (workout) => [
+    index("scheduled_workouts_schedule_idx").on(workout.scheduleId),
+    index("scheduled_workouts_user_idx").on(workout.userId),
+    index("scheduled_workouts_date_idx").on(workout.scheduledDate),
+    index("scheduled_workouts_status_idx").on(workout.status),
+    index("scheduled_workouts_user_date_idx").on(workout.userId, workout.scheduledDate),
+    uniqueIndex("scheduled_workouts_unique_idx").on(workout.scheduleId, workout.programWorkoutId, workout.scheduledDate),
+  ]
+);
+
+// Relations for scheduling tables
+export const userProgramSchedulesRelations = relations(userProgramSchedules, ({ one, many }) => ({
+  enrollment: one(programEnrollments, {
+    fields: [userProgramSchedules.enrollmentId],
+    references: [programEnrollments.id],
+  }),
+  scheduledWorkouts: many(scheduledWorkouts),
+}));
+
+export const scheduledWorkoutsRelations = relations(scheduledWorkouts, ({ one }) => ({
+  schedule: one(userProgramSchedules, {
+    fields: [scheduledWorkouts.scheduleId],
+    references: [userProgramSchedules.id],
+  }),
+  programWorkout: one(programWorkouts, {
+    fields: [scheduledWorkouts.programWorkoutId],
+    references: [programWorkouts.id],
+  }),
+  workoutSession: one(workoutSessions, {
+    fields: [scheduledWorkouts.workoutSessionId],
+    references: [workoutSessions.id],
+  }),
+}));
 
 // ============================================================================
 // SHARED WORKOUTS (Community discoverable workouts)
@@ -2186,6 +2328,31 @@ export const contentComments = pgTable(
 );
 
 /**
+ * Content reports - for community moderation
+ */
+export const contentReports = pgTable(
+  "content_reports",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reporterId: text("reporter_id").notNull(), // User who reported
+    contentType: text("content_type").notNull(), // challenge, workout, program, comment
+    contentId: uuid("content_id").notNull(),
+    reason: text("reason").notNull(), // inappropriate, spam, harassment, copyright, other
+    details: text("details"), // Additional details from reporter
+    status: text("status").default("pending").notNull(), // pending, resolved, dismissed
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    resolvedBy: text("resolved_by"), // Admin user ID who resolved
+    resolutionNotes: text("resolution_notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (report) => [
+    index("content_reports_reporter_idx").on(report.reporterId),
+    index("content_reports_content_idx").on(report.contentType, report.contentId),
+    index("content_reports_status_idx").on(report.status),
+  ]
+);
+
+/**
  * Comment likes
  */
 export const commentLikes = pgTable(
@@ -2684,3 +2851,9 @@ export type NewChallengeMilestoneProgress = typeof challengeMilestoneProgress.$i
 // Challenge Proof Uploads
 export type ChallengeProofUpload = typeof challengeProofUploads.$inferSelect;
 export type NewChallengeProofUpload = typeof challengeProofUploads.$inferInsert;
+
+// User Program Schedules
+export type UserProgramSchedule = typeof userProgramSchedules.$inferSelect;
+export type NewUserProgramSchedule = typeof userProgramSchedules.$inferInsert;
+export type ScheduledWorkout = typeof scheduledWorkouts.$inferSelect;
+export type NewScheduledWorkout = typeof scheduledWorkouts.$inferInsert;

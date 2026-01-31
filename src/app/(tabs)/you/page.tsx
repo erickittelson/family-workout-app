@@ -236,6 +236,16 @@ export default async function YouPage() {
                 caption?: string;
                 uploadedAt: string;
               }>) || [],
+              fieldVisibility: (profile.fieldVisibility as {
+                bio?: "public" | "circles" | "private";
+                city?: "public" | "circles" | "private";
+                metrics?: "public" | "circles" | "private";
+                sports?: "public" | "circles" | "private";
+                skills?: "public" | "circles" | "private";
+                prs?: "public" | "circles" | "private";
+                badges?: "public" | "circles" | "private";
+                socialLinks?: "public" | "circles" | "private";
+              }) || undefined,
             }
           : null
       }

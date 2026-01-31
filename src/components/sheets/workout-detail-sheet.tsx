@@ -438,9 +438,9 @@ export function WorkoutDetailSheet({
               <section className="mb-6">
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Dumbbell className="h-4 w-4 text-brand" />
-                  Exercises ({workout.exercises.length})
+                  Exercises ({workout.exercises?.length || 0})
                 </h3>
-                {workout.exercises.length === 0 ? (
+                {!workout.exercises || workout.exercises.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground">
                     <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No exercises listed yet</p>

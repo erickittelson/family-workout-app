@@ -331,8 +331,10 @@ export function ProgramClient({
                                 hasDetails && "cursor-pointer hover:bg-muted"
                               )}
                               onClick={() => {
-                                if (workout.sharedWorkoutId) {
-                                  setSelectedWorkoutId(workout.sharedWorkoutId);
+                                // Use sharedWorkoutId if available, otherwise use workoutPlanId
+                                const workoutId = workout.sharedWorkoutId || workout.workoutPlanId;
+                                if (workoutId) {
+                                  setSelectedWorkoutId(workoutId);
                                 }
                               }}
                             >
@@ -387,8 +389,9 @@ export function ProgramClient({
                                     className="h-8 w-8"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (workout.sharedWorkoutId) {
-                                        setSelectedWorkoutId(workout.sharedWorkoutId);
+                                      const workoutId = workout.sharedWorkoutId || workout.workoutPlanId;
+                                      if (workoutId) {
+                                        setSelectedWorkoutId(workoutId);
                                       }
                                     }}
                                   >
